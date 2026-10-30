@@ -93,6 +93,13 @@ export default async function moreScreen(view) {
       </section>
 
       <section class="card tight">
+        <p class="card-label" style="padding:2px 2px 6px">Gentileza</p>
+        <div class="list">
+          ${item('dias-dificeis', 'moon', 'Dias difíceis', 'marque sem culpa, a sequência não quebra')}
+        </div>
+      </section>
+
+      <section class="card tight">
         <p class="card-label" style="padding:2px 2px 6px">App</p>
         <div class="list">
           ${item('ajustes', 'sliders', 'Ajustes', 'metas, medicamento e IA')}

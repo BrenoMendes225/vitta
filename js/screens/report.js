@@ -7,6 +7,7 @@ import * as db from '../db.js';
 import { todayISO, addDays, fmtShort, fmtLong, rangeDays, humanDate, fmtMonthYear } from '../date.js';
 import { dailyWeights, mealTotals, sortAsc } from '../stats.js';
 import { getWater } from '../water.js';
+import { allMoods } from '../daymood.js';
 import { back } from '../router.js';
 
 const PERIODS = [
@@ -23,9 +24,10 @@ export default async function reportScreen(view) {
   const days = period === 'all' ? null : Number(period);
   const from = days ? addDays(today, -(days - 1)) : null;
 
-  const [weights, meals, measurements, injections, symptoms, workouts] = await Promise.all([
+  const [weights, meals, measurements, injections, symptoms, workouts, moods] = await Promise.all([
     db.all('weights'), db.all('meals'), db.all('measurements'),
     db.all('injections'), db.all('symptoms'), db.all('workouts'),
+    allMoods(),
   ]);
 
   const within = (r) => !from || (r.date && r.date >= from);
@@ -56,6 +58,7 @@ export default async function reportScreen(view) {
 
   const streakDays = new Set(milk.map((m) => m.date)).size;
   const workoutDays = new Set(workouts.filter(within).map((x) => x.date)).size;
+  const hardDays = moods.filter((m) => within({ date: m.date })).length;
 
   const metricRow = (label, a, b, unit = 'cm') => {
     if (!a && !b) return '';
@@ -139,6 +142,7 @@ export default async function reportScreen(view) {
           ${state.settings.injection?.name ? `<tr><td>Medicamento</td><td>${esc(state.settings.injection.name)}${state.settings.injection.dose ? ` · ${esc(state.settings.injection.dose)} ${esc(state.settings.injection.unit || '')}` : ''}</td></tr>` : ''}
           <tr><td>Dias com treino</td><td>${workoutDays}</td></tr>
           <tr><td>Média de água por dia</td><td>${fmtL(waterAvg)} L</td></tr>
+          ${hardDays ? `<tr><td>Dias difíceis (sem cobrança)</td><td>${hardDays}</td></tr>` : ''}
         </table>
       </section>
 

@@ -470,6 +470,52 @@ a { color: var(--p); text-decoration: none; }
 .lg b { display: block; font-size: 15px; }
 .lg span { font-size: 13px; color: var(--mut); }
 
+/* ---------- modo acolhedor (dia ruim) ---------- */
+
+.card.hero.soft {
+  text-align: center;
+  background: var(--s2);
+  border-color: transparent;
+  padding: 26px 20px 20px;
+}
+.soft-emoji { font-size: 44px; line-height: 1; margin-bottom: 10px; }
+.soft-title {
+  font-family: var(--hd);
+  font-size: 21px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.soft-msg {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0;
+  max-width: 320px;
+  margin-inline: auto;
+}
+.soft-support {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--mut);
+  margin: 14px 0 0;
+  line-height: 1.5;
+}
+.card.hero.soft .insight { text-align: left; }
+
+/* marcadores de dia difícil */
+.day-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mut);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.days button.bad { border-style: dashed; }
+.days button.bad b { opacity: 0.6; }
+
 /* ---------- anéis de progresso ---------- */
 
 .ringw { position: relative; width: 220px; margin: 0 auto 6px; }

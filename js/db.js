@@ -2,7 +2,7 @@
    Tudo fica no aparelho. `kv` guarda configurações e valores simples (água do dia). */
 
 const DB_NAME = 'vitta';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const DEFS = {
   kv: { key: 'k' },
@@ -13,6 +13,7 @@ const DEFS = {
   symptoms: { key: 'id', idx: ['date'] },
   workouts: { key: 'id', idx: ['date'] },
   photos: { key: 'id', idx: ['date'] },
+  daymoods: { key: 'id', idx: ['date'] },
 };
 
 let dbPromise = null;
@@ -36,7 +37,8 @@ function openDB() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
-    req.onblocked = () => reject(new Error('Banco bloqueado por outra aba. Feche as outras abas e recarregue.'));
+    // outra aba pode estar com o banco aberto: espera ela fechar em vez de quebrar
+    req.onblocked = () => console.warn('IndexedDB bloqueado por outra aba. Aguardando…');
   });
   return dbPromise;
 }

@@ -30,6 +30,7 @@ function openQuickMenu() {
     { label: 'Registrar refeição', desc: 'Texto, proteína e foto', color: 'var(--a)', icon: 'bowl', fn: 'openMealSheet' },
     { label: 'Registrar aplicação', desc: 'Dose e local', color: 'var(--w)', icon: 'syringe', fn: 'openInjectionSheet' },
     { label: 'Ajustar metas', desc: 'Água, proteína, peso meta', color: 'var(--ok)', icon: 'target', fn: 'openGoalsSheet' },
+    { label: 'Marcar dia difícil', desc: 'Sem cobrança, sem culpa', color: 'var(--mut)', icon: 'moon', fn: 'openBadDaySheet' },
   ];
 
   openSheet({
@@ -86,6 +87,8 @@ boot().catch((err) => {
 
 /* Service worker: deixa o app disponível offline (precisa de https/localhost). */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  let reloading = false;
+
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('./sw.js');
@@ -93,6 +96,26 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     } catch (err) {
       console.warn('SW falhou:', err);
     }
+  });
+
+  // Quando um novo SW assume o controle, recarrega para pegar os arquivos novos.
+  // (evita misturar db.js antigo com módulos novos — caso do IndexedDB)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    const reload = () => location.reload();
+    if (document.body.classList.contains('so')) {
+      // não recarrega no meio de um formulário — espera a folha fechar
+      const obs = new MutationObserver(() => {
+        if (!document.body.classList.contains('so')) {
+          obs.disconnect();
+          setTimeout(reload, 150);
+        }
+      });
+      obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      return;
+    }
+    setTimeout(reload, 100);
   });
 
   function watchUpdate(reg) {

@@ -6,7 +6,8 @@ import { fmtNum, fmtKcal, progressBar, esc, emptyState, openSheet, confirmSheet,
 import * as db from '../db.js';
 import { todayISO, addDays, humanDate, fmtShort } from '../date.js';
 import { mealTotals } from '../stats.js';
-import { mealSheet } from '../forms.js';
+import { mealSheet, badDaySheet } from '../forms.js';
+import { moodMap, MOODS } from '../daymood.js';
 import { refresh, go } from '../router.js';
 
 let cursor = todayISO();
@@ -19,11 +20,17 @@ const MACROS = [
 
 export default async function mealsScreen(view) {
   const today = todayISO();
-  const meals = (await db.byDate('meals', cursor)).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-  const totals = mealTotals(meals);
+  const [meals, moods] = await Promise.all([
+    db.byDate('meals', cursor),
+    moodMap(),
+  ]);
+  const mealsSorted = meals.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  const totals = mealTotals(mealsSorted);
   const g = goals();
   const isToday = cursor === today;
   const canGoForward = cursor < today;
+  const dayMood = moods.get(cursor);
+  const mood = dayMood ? (MOODS[dayMood.mood] || MOODS.ruim) : null;
 
   const fallbackKcal = totals.kcal;
 
@@ -45,8 +52,8 @@ export default async function mealsScreen(view) {
       </div>
     </section>`;
 
-  const list = meals.length
-    ? `<div class="list">${meals.map((m) => `
+  const list = mealsSorted.length
+    ? `<div class="list">${mealsSorted.map((m) => `
         <button class="list-item press" data-meal="${m.id}">
           ${m.thumb
             ? `<span class="li-icon" style="padding:0;overflow:hidden"><img src="${m.thumb}" alt="" style="width:100%;height:100%;object-fit:cover"></span>`
@@ -62,12 +69,30 @@ export default async function mealsScreen(view) {
         `<button class="btn btn-primary" data-add>${icon('plus', 17)} Registrar</button>`,
       );
 
+  /* dia difícil marcado — sem julgamento */
+  const moodBanner = mood
+    ? `<section class="card flat" style="margin-bottom:14px">
+        <div class="row">
+          <div class="row" style="gap:10px;justify-content:flex-start">
+            <span style="font-size:22px">${mood.emoji}</span>
+            <div class="stack-sm">
+              <span class="strong" style="font-size:14px">${esc(mood.short)}</span>
+              <span class="small muted">${dayMood.reason ? esc(dayMood.reason) : 'Sem cobrança neste dia'}</span>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-soft" data-mood-edit>Editar</button>
+        </div>
+        ${dayMood.note ? `<p class="small muted" style="margin:12px 0 0">${esc(dayMood.note)}</p>` : ''}
+      </section>`
+    : '';
+
   /* day selector pills (últimos 7 dias) */
   const daysHtml = [];
   for (let i = 6; i >= 0; i--) {
     const d = addDays(today, -i);
     const nd = new Date(d + 'T12:00:00');
-    daysHtml.push(`<button class="${d === cursor ? 'on' : ''}" onclick="setDay('${d}')"><span>${nd.toLocaleDateString('pt-BR', { weekday: 'narrow' }).toUpperCase()}</span><b>${nd.getDate()}</b></button>`);
+    const isBad = moods.has(d);
+    daysHtml.push(`<button class="${d === cursor ? 'on' : ''}${isBad ? ' bad' : ''}" onclick="setDay('${d}')"><span>${nd.toLocaleDateString('pt-BR', { weekday: 'narrow' }).toUpperCase()}</span><b>${nd.getDate()}${isBad ? '<i class="day-dot"></i>' : ''}</b></button>`);
   }
 
   view.innerHTML = `
@@ -82,6 +107,7 @@ export default async function mealsScreen(view) {
     <div class="days">${daysHtml.join('')}</div>
 
     <div class="stack">
+      ${moodBanner}
       ${macrosCard}
       ${list}
       <p class="disclaimer">
@@ -90,6 +116,9 @@ export default async function mealsScreen(view) {
     </div>`;
 
   view.querySelector('[data-add]')?.addEventListener('click', () => mealSheet({ date: cursor, onDone: refresh }));
+  view.querySelector('[data-mood-edit]')?.addEventListener('click', () => {
+    badDaySheet({ date: cursor, entry: dayMood, onDone: refresh });
+  });
 
   // global day setter
   window.setDay = (d) => {
