@@ -4,7 +4,7 @@
 import { state } from './store.js';
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+const FALLBACK_MODELS = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 
 const MEAL_SCHEMA = {
   type: 'OBJECT',
