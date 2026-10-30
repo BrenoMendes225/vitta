@@ -182,7 +182,7 @@ export function mealSheet({ date = todayISO(), meal = null, onDone } = {}) {
       <input type="hidden" name="confidence" value="${esc(meal?.confidence || '')}">
     </div>
     <div class="chips" style="margin:10px 0 14px">
-      ${[10, 20, 30, 40].map(n => `<button type="button" class="chip" onclick="document.getElementById('meal-protein').value=${n}">${n} g</button>`).join('')}
+      ${[10, 20, 30, 40].map(n => `<button type="button" class="chip" onclick="document.getElementById('f-protein').value=${n}">${n} g</button>`).join('')}
     </div>
     ${editing ? `<button type="button" class="btn btn-danger btn-block" data-delete>${icon('trash', 17)} Excluir refeição</button>` : ''}`;
 

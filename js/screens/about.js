@@ -19,7 +19,7 @@ export default async function aboutScreen(view) {
     <div class="stack">
       <section class="card">
         <div class="row start" style="gap:12px">
-          <span style="width:44px;height:44px;border-radius:14px;background:var(--p);color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 4px 16px color-mix(in srgb, var(--p) 50%, transparent)">
+          <span style="width:44px;height:44px;border-radius:14px;background:var(--p);color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 4px 16px var(--p-50)">
             ${icon('activity', 24, 2)}
           </span>
           <div>

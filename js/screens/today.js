@@ -6,7 +6,7 @@ import { fmtNum, fmtKg, fmtVol, esc, toast } from '../ui.js';
 import * as db from '../db.js';
 import { todayISO, humanDate, greeting, fmtShort, relativeDays, cap } from '../date.js';
 import { weightSummary, mealTotals } from '../stats.js';
-import { ringChart } from '../charts.js';
+import { ringChart, sparkline } from '../charts.js';
 import { getWater, addWater } from '../water.js';
 import { nextInjection, doseLabel } from '../schedule.js';
 import { weightSheet, waterSheet, mealSheet, injectionSheet, symptomSheet } from '../forms.js';
@@ -27,6 +27,7 @@ export default async function todayScreen(view) {
   const totals = mealTotals(meals);
   const next = nextInjection(state.settings, injections);
   const firstName = (state.settings.name || '').trim().split(' ')[0];
+  const spark = summary.daily.slice(-14).map((p) => ({ date: p.date, value: p.value }));
 
   /* anéis: água (externa), proteína (média), aplicação (interna) */
   const waterPct = g.water ? Math.min(1, water / g.water) : 0;
@@ -48,7 +49,7 @@ export default async function todayScreen(view) {
               : '<span class="muted">primeiro registro</span>'}
           </p>
         </div>
-        <div style="margin-bottom:2px">${icon('activity', 36)}</div>
+        <div style="margin-bottom:2px">${sparkline(spark, { width: 96, height: 42 })}</div>
       </div>`
     : `
       <p class="card-label">Peso</p>
@@ -89,11 +90,14 @@ export default async function todayScreen(view) {
 
     <div class="stack">
       <section class="card hero">
-        <div class="ringw">${ringChart([
-          { r: 88, pct: waterPct, color: 'var(--w)', label: 'Água' },
-          { r: 68, pct: proteinPct, color: 'var(--p)', label: 'Proteína' },
-          { r: 48, pct: cycPct, color: 'var(--a)', label: 'Aplicação' },
-        ], overallPct)}</div>
+        <div class="ringw">
+          ${ringChart([
+            { r: 88, pct: waterPct, color: 'var(--w)', label: 'Água' },
+            { r: 68, pct: proteinPct, color: 'var(--p)', label: 'Proteína' },
+            { r: 48, pct: cycPct, color: 'var(--a)', label: 'Aplicação' },
+          ], overallPct)}
+          <div class="ctr"><b>${overallPct}%</b><span>da meta de hoje</span></div>
+        </div>
         <div class="lg"><i style="background:var(--w)"></i><div><b>Água</b><span>${fmtVol(water)} de ${fmtVol(g.water)} L</span></div></div>
         <div class="lg"><i style="background:var(--p)"></i><div><b>Proteína</b><span>${fmtNum(totals.protein, 0)} de ${fmtNum(g.protein, 0)} g</span></div></div>
         <div class="lg"><i style="background:var(--a)"></i><div><b>Aplicação</b><span>${next ? (next.days > 0 ? `em ${relativeDays(next.date)}` : next.days === 0 ? 'hoje' : `atrasada ${Math.abs(next.days)}d`) : 'não configurada'}</span></div></div>

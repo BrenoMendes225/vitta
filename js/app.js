@@ -3,7 +3,7 @@
 import { loadSettings, state, APP } from './store.js';
 import { startRouter, go, parsePath } from './router.js';
 import { icon } from './icons.js';
-import { toast } from './ui.js';
+import { openSheet, closeSheet } from './ui.js';
 
 const TABS = [
   { tab: 'hoje', path: 'hoje', label: 'Hoje', icon: 'home' },
@@ -20,50 +20,45 @@ function buildTabbar() {
       ${icon(t.icon, 23, 1.9)}
       <span>${t.label}</span>
     </a>`).join('');
-  
-  // marca tab ativa
-  const cur = parsePath();
-  nav.querySelectorAll('a').forEach(a => {
-    if (a.getAttribute('href') === `#/${cur}`) a.classList.add('on');
-  });
 }
 
-/* ---------- FAB + Menu de ações rápidas ---------- */
+/* ---------- FAB + menu de ações rápidas ---------- */
 
 function openQuickMenu() {
   const actions = [
-    { label: 'Registrar peso', desc: 'Balança e foto opcional', color: 'var(--p)', icon: 'scale', fn: 'openWeightSheet()' },
-    { label: 'Registrar refeição', desc: 'Texto, proteína e foto', color: 'var(--a)', icon: 'bowl', fn: 'openMealSheet()' },
-    { label: 'Registrar aplicação', desc: 'Dose e local', color: 'var(--w)', icon: 'syringe', fn: 'openInjectionSheet()' },
-    { label: 'Ajustar metas', desc: 'Água, proteína, peso meta', color: 'var(--ok)', icon: 'target', fn: 'openGoalsSheet()' },
+    { label: 'Registrar peso', desc: 'Balança e foto opcional', color: 'var(--p)', icon: 'scale', fn: 'openWeightSheet' },
+    { label: 'Registrar refeição', desc: 'Texto, proteína e foto', color: 'var(--a)', icon: 'bowl', fn: 'openMealSheet' },
+    { label: 'Registrar aplicação', desc: 'Dose e local', color: 'var(--w)', icon: 'syringe', fn: 'openInjectionSheet' },
+    { label: 'Ajustar metas', desc: 'Água, proteína, peso meta', color: 'var(--ok)', icon: 'target', fn: 'openGoalsSheet' },
   ];
-  
-  const html = `
-    <div class="sheet-head"><h2>O que registrar?</h2></div>
-    <div class="sheet-body">
-      ${actions.map(a => `
-        <button class="act" onclick="${a.fn}; closeSheet()">
+
+  openSheet({
+    title: 'O que registrar?',
+    hideSubmit: true,
+    hideCancel: true,
+    body: `
+      ${actions.map((a) => `
+        <button type="button" class="act" data-action="${a.fn}">
           <i style="background:${a.color}">${icon(a.icon, 22, 2)}</i>
           <div>${a.label}<span>${a.desc}</span></div>
-        </button>`).join('')}
-    </div>`;
-  
-  openSheet(html);
+        </button>`).join('')}`,
+    onMount: (form) => {
+      form.querySelectorAll('[data-action]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          closeSheet();
+          const mod = await import('./forms.js');
+          const fn = mod[btn.dataset.action];
+          if (typeof fn === 'function') fn();
+        });
+      });
+    },
+  });
 }
 
-// Funções globais para onclick inline nos screens
+/* atalhos globais usados por onclick inline nos formulários */
 window.openQuickMenu = openQuickMenu;
-window.closeSheet = () => document.body.classList.remove('so');
-window.openSheet = (html) => {
-  document.getElementById('sh').innerHTML = '<div class="grab"></div>' + html;
-  document.body.classList.add('so');
-};
-
-// Delegação para sheets que precisam chamar funções dos screens
-window.openWeightSheet = () => import('./forms.js').then(m => m.openWeightSheet());
-window.openMealSheet = () => import('./forms.js').then(m => m.openMealSheet());
-window.openInjectionSheet = () => import('./forms.js').then(m => m.openInjectionSheet());
-window.openGoalsSheet = () => import('./forms.js').then(m => m.openGoalsSheet());
+window.closeSheet = closeSheet;
+window.openSheet = openSheet;
 
 async function boot() {
   document.documentElement.style.setProperty('--app-name', `"${APP.name}"`);
@@ -74,7 +69,6 @@ async function boot() {
     location.replace('#/bemvindo');
   }
 
-  // FAB click
   document.querySelector('.fab')?.addEventListener('click', openQuickMenu);
 
   startRouter();
@@ -92,7 +86,38 @@ boot().catch((err) => {
 
 /* Service worker: deixa o app disponível offline (precisa de https/localhost). */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW falhou:', err));
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      watchUpdate(reg);
+    } catch (err) {
+      console.warn('SW falhou:', err);
+    }
   });
+
+  function watchUpdate(reg) {
+    if (!reg) return;
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        // instalado com um controller existente = nova versão disponível
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateToast();
+        }
+      });
+    });
+  }
+
+  function showUpdateToast() {
+    const tt = document.getElementById('tt');
+    if (!tt || document.getElementById('vitta-update')) return;
+    tt.innerHTML = '<button id="vitta-update" style="color:inherit;font:inherit;font-weight:700;cursor:pointer">Nova versão — toque para atualizar</button>';
+    tt.classList.add('on');
+    tt.querySelector('#vitta-update')?.addEventListener('click', async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      reg?.update();
+      location.reload();
+    });
+  }
 }

@@ -10,7 +10,7 @@ import { go } from '../router.js';
 export default async function welcomeScreen(view) {
   view.innerHTML = `
     <div style="padding:26px 4px 18px;text-align:center">
-      <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--p);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb, var(--p) 50%, transparent)">
+      <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--p);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px var(--p-50)">
         ${icon('activity', 30, 2)}
       </div>
       <h1 style="margin:0;font-size:29px;letter-spacing:-.03em">${APP.name}</h1>

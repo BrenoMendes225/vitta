@@ -7,7 +7,11 @@ export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' }[c]
+    c === '&' ? '&' + 'amp;' :
+    c === '<' ? '&' + 'lt;' :
+    c === '>' ? '&' + 'gt;' :
+    c === '"' ? '&' + 'quot;' :
+    '&#' + '39;'
   ));
 }
 
@@ -63,8 +67,13 @@ export function toast(message, kind = 'ok') {
 
 /* ---------- bottom sheet (novo sistema com #sh / #bd) ---------- */
 
+let activeSheet = null;
+
 export function closeSheet() {
+  const sheet = activeSheet;
+  activeSheet = null;
   document.body.classList.remove('so');
+  sheet?.onClose?.();
 }
 
 export function openSheet({
@@ -105,6 +114,7 @@ export function openSheet({
   const form = sh.querySelector('form');
   const api = {
     form,
+    backdrop: sh,
     close: closeSheet,
     onClose,
     setLoading(on) {
@@ -120,12 +130,18 @@ export function openSheet({
     },
   };
 
-  sh.addEventListener('click', (e) => {
-    if (e.target.closest('[data-close]')) {
-      e.preventDefault();
-      closeSheet();
-    }
-  });
+  activeSheet = api;
+
+  // delegação: um único listener no #sh, ligado uma vez
+  if (!sh.dataset.wired) {
+    sh.dataset.wired = '1';
+    sh.addEventListener('click', (e) => {
+      if (e.target.closest('[data-close]')) {
+        e.preventDefault();
+        closeSheet();
+      }
+    });
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -2,7 +2,7 @@
 
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, fmtKg, signed, esc, emptyState } from '../ui.js';
+import { fmtNum, fmtKg, signed, esc, emptyState, openSheet } from '../ui.js';
 import * as db from '../db.js';
 import { todayISO, addDays, humanDate, fmtMonthYear, diffDays } from '../date.js';
 import { weightSummary, movingAverage, sortAsc } from '../stats.js';
@@ -101,15 +101,20 @@ export default async function weightScreen(view) {
   }
 
   /* photo strip — horizontal scroll */
-  const photoStrip = photos.length
+  const weightPhotos = photos.filter((p) => p.kind === 'weight');
+  const photoURLs = weightPhotos.map((p) => URL.createObjectURL(p.blob));
+  const photoStrip = weightPhotos.length
     ? `<div class="card">
         <h2 class="card-title">${icon('photo', 16)} Fotos de progresso</h2>
         <div class="strip">
-          ${photos.map((p, i) => p.kind === 'weight' && p.url ? `
-            <button class="ph" onclick="zoom(${i})">
-              <img src="${p.url}" alt="Foto de ${p.meta?.date || ''}">
-              <span>${p.meta?.date ? humanDate(p.meta.date) : ''} · ${p.meta?.kg ? fmtKg(p.meta.kg) : ''}</span>
-            </button>` : '').join('')}
+          ${weightPhotos.map((p, i) => {
+            const kg = weights.find((w) => w.photoId === p.id)?.kg;
+            const date = p.meta?.date || p.date || '';
+            return `<button class="ph" data-photo="${i}">
+              <img src="${photoURLs[i]}" alt="Foto de ${humanDate(date)}">
+              <span>${date ? humanDate(date) : ''}${kg ? ` · ${fmtKg(kg)}` : ''}</span>
+            </button>`;
+          }).join('')}
         </div>
       </div>`
     : '';
@@ -165,6 +170,25 @@ export default async function weightScreen(view) {
     refresh({ keepScroll: true });
   };
 
+  view.querySelectorAll('[data-photo]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const i = Number(el.dataset.photo);
+      const p = weightPhotos[i];
+      if (!p) return;
+      const kg = weights.find((w) => w.photoId === p.id)?.kg;
+      const date = p.meta?.date || p.date || '';
+      openSheet({
+        title: date ? humanDate(date) : 'Foto',
+        hideSubmit: true,
+        hideCancel: true,
+        body: `
+          <img class="zi" src="${photoURLs[i]}" alt="Foto de progresso">
+          ${kg ? `<p class="big" style="font-size:32px">${fmtKg(kg)}<span class="unit">kg</span></p>` : ''}
+          <p class="small muted" style="margin:0">${date ? humanDate(date) : ''}</p>`,
+      });
+    });
+  });
+
   view.querySelectorAll('[data-edit]').forEach((el) => {
     el.addEventListener('click', () => {
       const entry = weights.find((w) => w.id === el.dataset.edit);
@@ -172,15 +196,3 @@ export default async function weightScreen(view) {
     });
   });
 }
-
-/* zoom photo — global */
-window.zoom = (i) => {
-  const photos = JSON.parse(localStorage.getItem('vitta_photos') || '[]');
-  const p = photos[i];
-  if (!p || !p.url) return;
-  import('./app.js').then(m => m.openSheet(`
-    <img class="zi" src="${p.url}" alt="">
-    <h2>${fmtKg(p.meta?.kg || 0)} kg</h2>
-    <div class="mut">${p.meta?.date || ''}</div>
-  `));
-};
