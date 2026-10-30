@@ -1,6 +1,6 @@
 /* Service worker: app shell offline. */
 
-const VERSION = 'vitta-v9';
+const VERSION = 'vitta-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const ASSETS = [
   './js/forms.js',
   './js/schedule.js',
   './js/water.js',
+  './js/supabase.js',
   './js/screens/today.js',
   './js/screens/meals.js',
   './js/screens/weight.js',
@@ -33,6 +34,8 @@ const ASSETS = [
   './js/screens/report.js',
   './js/screens/welcome.js',
   './js/screens/about.js',
+  './js/screens/onboarding.js',
+  './js/screens/login.js',
   './icons/icon.svg',
   './icons/icon-180.png',
   './icons/icon-192.png',

@@ -65,6 +65,19 @@ async function boot() {
   await loadSettings();
   buildTabbar();
 
+  const onboarded = localStorage.getItem('vitta_onboarded');
+  const current = parsePath();
+
+  if (!onboarded && !['onboarding','login','bemvindo'].includes(current)) {
+    location.replace('#/onboarding');
+    return;
+  }
+
+  if (!localStorage.getItem('vitta_user') && !localStorage.getItem('vitta_onboarded') && !['onboarding','login'].includes(current)) {
+    location.replace('#/login');
+    return;
+  }
+
   if (!state.settings.onboarded && parsePath() !== 'bemvindo') {
     location.replace('#/bemvindo');
   }

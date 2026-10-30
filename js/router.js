@@ -14,6 +14,8 @@ const SCREENS = {
   relatorio: () => import('./screens/report.js'),
   bemvindo: () => import('./screens/welcome.js'),
   sobre: () => import('./screens/about.js'),
+  onboarding: () => import('./screens/onboarding.js'),
+  login: () => import('./screens/login.js'),
 };
 
 const TAB_OF = {
