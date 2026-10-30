@@ -81,8 +81,8 @@ export default async function reportScreen(view) {
     </header>
 
     <div class="no-print" style="margin:-6px 0 14px">
-      <div class="seg" data-period>
-        ${PERIODS.map((p) => `<button type="button" data-value="${p.value}" class="${period === p.value ? 'on' : ''}">${p.label}</button>`).join('')}
+      <div class="chips" data-period>
+        ${PERIODS.map((p) => `<button type="button" class="chip${period === p.value ? ' on' : ''}" onclick="setPeriod('${p.value}')">${p.label}</button>`).join('')}
       </div>
     </div>
 
@@ -92,7 +92,7 @@ export default async function reportScreen(view) {
           <p class="eyebrow" style="margin:0">${APP.name}</p>
           <h2 style="margin:2px 0 0;font-size:22px">Resumo de acompanhamento</h2>
           <p class="small muted" style="margin:4px 0 0">
-            ${esc(state.settings.name || 'Paciente')}${state.settings.birthDate ? '' : ''} ·
+            ${esc(state.settings.name || 'Paciente')} ·
             ${from ? `${fmtShort(from)} a ${fmtShort(today)}` : 'histórico completo'} · emitido em ${fmtShort(today)}
           </p>
         </div>
@@ -161,11 +161,10 @@ export default async function reportScreen(view) {
 
   view.querySelector('[data-back]')?.addEventListener('click', () => back('mais'));
   view.querySelector('[data-print]')?.addEventListener('click', () => window.print());
-  view.querySelectorAll('[data-period] button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      period = btn.dataset.value;
-      view.querySelectorAll('[data-period] button').forEach((b) => b.classList.toggle('on', b === btn));
-      import('../router.js').then(({ refresh }) => refresh({ keepScroll: true }));
-    });
-  });
+
+  // period pills - delegado no window
+  window.setPeriod = (v) => {
+    period = v;
+    import('../router.js').then(({ refresh }) => refresh({ keepScroll: true }));
+  };
 }

@@ -13,79 +13,75 @@ function scale(values, { min, max }) {
 }
 
 /**
- * Gráfico de linha com média móvel.
- * @param {{points: {date: string, value: number, ma?: number}[], goal?: number|null, height?: number}} opts
+ * Anéis de progresso concêntricos (para tela Hoje).
+ * rings = [{ r, pct, color, label }, ...]
+ * centerValue = número no centro (ex: 75)
  */
-export function lineChart({ points = [], goal = null, height = 190, showRaw = true }) {
-  const W = 360;
-  const H = height;
-  const pad = { l: 38, r: 10, t: 14, b: 30 };
-  const hasGoal = Number.isFinite(goal) && goal > 0;
+export function ringChart(rings, centerValue) {
+  let svg = '';
+  for (const ring of rings) {
+    const R = ring.r;
+    const circ = 2 * Math.PI * R;
+    const pct = Math.max(0, Math.min(1, ring.pct || 0));
+    const dash = pct > 0 ? Math.max(0.5, circ * pct) : 0;
+    svg += `<circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--s2)" stroke-width="15"/>
+            <circle cx="100" cy="100" r="${R}" fill="none" stroke="${ring.color}" stroke-width="15" stroke-linecap="round" stroke-dasharray="${dash} ${circ}" transform="rotate(-90 100 100)" style="transition:stroke-dasharray .7s"/>`;
+  }
+  return `<svg viewBox="0 0 200 200" role="img" aria-label="Progresso do dia: ${centerValue}%">${svg}</svg>`;
+}
 
-  if (points.length === 0) {
-    return `<div class="empty">Sem registros no período.</div>`;
+/**
+ * Gráfico de peso com área gradiente (estilo acompanhamento.html).
+ * points = [{ date, value }]
+ * goal = número ou null
+ */
+export function weightChart(points, goal = null) {
+  if (points.length < 2) {
+    return `<div class="empty"><p>Registre ao menos 2 pesos neste período para ver o gráfico.</p></div>`;
   }
 
-  const values = points.map((p) => p.value);
-  const range = scale(hasGoal ? [...values, goal] : values, {});
-  const x = (i) => pad.l + (i / Math.max(points.length - 1, 1)) * (W - pad.l - pad.r);
-  const y = (v) => pad.t + (1 - (v - range.lo) / (range.hi - range.lo)) * (H - pad.t - pad.b);
+  const W = 340;
+  const H = 180;
+  const P = 26;
 
-  const maPoints = points.filter((p) => Number.isFinite(p.ma));
-  const pathFor = (arr) => arr.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(points.indexOf(p)).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
+  const values = points.map(p => p.value);
+  const all = goal != null ? [...values, goal] : values;
+  const mn = Math.min(...all) - 0.8;
+  const mx = Math.max(...all) + 0.8;
 
-  const areaPath = maPoints.length > 1
-    ? `${pathFor(maPoints)} L${x(points.indexOf(maPoints[maPoints.length - 1])).toFixed(1)},${(H - pad.b).toFixed(1)} L${x(points.indexOf(maPoints[0])).toFixed(1)},${(H - pad.b).toFixed(1)} Z`
-    : '';
+  const X = (i) => P + i * (W - 2 * P) / (points.length - 1);
+  const Y = (v) => H - P - (v - mn) * (H - 2 * P) / (mx - mn);
 
-  const gridLines = [0.25, 0.5, 0.75].map((f) => {
-    const gy = pad.t + f * (H - pad.t - pad.b);
-    return `<line class="grid-line" x1="${pad.l}" x2="${W - pad.r}" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}"/>`;
-  }).join('');
+  const pts = points.map((_, i) => `${X(i).toFixed(1)},${Y(points[i].value).toFixed(1)}`);
+  const l = pts.join(' ');
+  const areaPath = `M${X(0)},${H - P} L${l} L${X(points.length - 1)},${H - P} Z`;
+  const lastIdx = points.length - 1;
 
-  const goalLine = hasGoal
-    ? `<line class="goal-line" x1="${pad.l}" x2="${W - pad.r}" y1="${y(goal).toFixed(1)}" y2="${y(goal).toFixed(1)}"/>
-       <text class="axis-text" x="${W - pad.r}" y="${(y(goal) - 5).toFixed(1)}" text-anchor="end" fill="var(--accent)">meta ${fmtNum(goal, 1)}</text>`
-    : '';
+  let goalLine = '';
+  if (goal != null) {
+    const gy = Y(goal).toFixed(1);
+    goalLine = `<line x1="${P}" x2="${W - P}" y1="${gy}" y2="${gy}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="5 5"/>
+                <text x="${W - P}" y="${(Y(goal) - 6).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--ok)" font-family="DM Sans">meta ${fmtNum(goal, 1)}</text>`;
+  }
 
-  const dots = showRaw && points.length <= 40
-    ? points.map((p, i) => `<circle class="dot raw" cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="2.6"/>`).join('')
-    : '';
-
-  const lastMa = maPoints[maPoints.length - 1];
-  const lastDot = lastMa
-    ? `<circle class="dot" cx="${x(points.indexOf(lastMa)).toFixed(1)}" cy="${y(lastMa.value).toFixed(1)}" r="4.4"/>`
-    : '';
-
-  const labelIdx = points.length > 1 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : [0];
-  const xLabels = labelIdx.map((i) => (
-    `<text class="axis-text" x="${x(i).toFixed(1)}" y="${H - 9}" text-anchor="${i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}">${fmtShort(points[i].date)}</text>`
-  )).join('');
-
-  const svgYLabels = [range.hi, (range.hi + range.lo) / 2, range.lo].map((v, idx) => (
-    `<text class="axis-text" x="${pad.l - 7}" y="${y(v).toFixed(1)}" text-anchor="end" dy="${idx === 0 ? 8 : idx === 2 ? -3 : 3}">${fmtNum(v, 1)}</text>`
-  )).join('');
-
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Evolução do peso">
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de peso" font-family="DM Sans">
     <defs>
-      <linearGradient id="chartGrad" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.30"/>
-        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--p)" stop-opacity=".35"/>
+        <stop offset="1" stop-color="var(--p)" stop-opacity="0"/>
       </linearGradient>
     </defs>
-    ${gridLines}
     ${goalLine}
-    ${areaPath ? `<path class="area" d="${areaPath}"/>` : ''}
-    ${showRaw && points.length > 1 ? `<path class="raw-path" d="${pathFor(points)}"/>` : ''}
-    ${dots}
-    ${maPoints.length > 1 ? `<path class="ma-path" d="${pathFor(maPoints)}"/>` : ''}
-    ${lastDot}
-    ${xLabels}
-    ${svgYLabels}
+    <path d="${areaPath}" fill="url(#chartGrad)"/>
+    <polyline points="${l}" fill="none" stroke="var(--p)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${X(lastIdx).toFixed(1)}" cy="${Y(points[lastIdx].value).toFixed(1)}" r="6" fill="var(--s1)" stroke="var(--p)" stroke-width="3.5"/>
+    <text x="${P}" y="${H - 6}" font-size="11" fill="var(--mut)">${fmtShort(points[0].date)}</text>
+    <text x="${W - P}" y="${H - 6}" font-size="11" fill="var(--mut)" text-anchor="end">${fmtShort(points[lastIdx].date)}</text>
   </svg>`;
 }
 
-export function sparkline(points, { width = 104, height = 44, color = 'var(--accent)' } = {}) {
+/** Sparkline minúsculo (para cards). */
+export function sparkline(points, { width = 104, height = 44, color = 'var(--p)' } = {}) {
   const vals = points.map((p) => p.value);
   if (vals.length < 2) return `<div style="width:${width}px;height:${height}px"></div>`;
   const lo = Math.min(...vals);

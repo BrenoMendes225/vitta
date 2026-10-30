@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>Vitta</title>
   <meta name="description" content="Acompanhamento de peso, medidas, alimentação e aplicações.">
-  <meta name="theme-color" content="#f4f6f4" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0a100e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f1f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#130f1a" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -19,9 +19,11 @@
 </head>
 <body>
   <main id="view" aria-live="polite"></main>
-  <nav id="tabbar" aria-label="Navegação principal"></nav>
-  <div id="sheet-root"></div>
-  <div id="toast-root" aria-live="assertive"></div>
+  <button class="fab" aria-label="Novo registro">+</button>
+  <div class="nav"><div id="tabbar" aria-label="Navegação principal"></div></div>
+  <div id="bd" onclick="document.body.classList.remove('so')"></div>
+  <div id="sh" role="dialog" aria-modal="true"></div>
+  <div id="tt" role="status"></div>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

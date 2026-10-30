@@ -12,9 +12,9 @@ import { refresh, go } from '../router.js';
 let cursor = todayISO();
 
 const MACROS = [
-  { key: 'protein', label: 'Proteína', unit: 'g', color: 'var(--protein)' },
-  { key: 'carbs', label: 'Carboidrato', unit: 'g', color: 'var(--water)' },
-  { key: 'fat', label: 'Gordura', unit: 'g', color: 'var(--amber)' },
+  { key: 'protein', label: 'Proteína', unit: 'g', color: 'var(--p)' },
+  { key: 'carbs', label: 'Carboidrato', unit: 'g', color: 'var(--w)' },
+  { key: 'fat', label: 'Gordura', unit: 'g', color: 'var(--a)' },
 ];
 
 export default async function mealsScreen(view) {
@@ -58,9 +58,17 @@ export default async function mealsScreen(view) {
           <div class="li-end">${m.kcal ? `${fmtNum(m.kcal)} kcal` : ''}</div>
         </button>`).join('')}</div>`
     : emptyState(
-      isToday ? 'Nada registrado hoje ainda.<br>Fotografe o prato e deixe a IA estimar.' : 'Nenhuma refeição registrada neste dia.',
-      `<button class="btn btn-primary" data-add>${icon('plus', 17)} Registrar</button>`,
-    );
+        isToday ? 'Nada registrado hoje ainda.<br>Fotografe o prato e deixe a IA estimar.' : 'Nenhuma refeição registrada neste dia.',
+        `<button class="btn btn-primary" data-add>${icon('plus', 17)} Registrar</button>`,
+      );
+
+  /* day selector pills (últimos 7 dias) */
+  const daysHtml = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today, -i);
+    const nd = new Date(d + 'T12:00:00');
+    daysHtml.push(`<button class="${d === cursor ? 'on' : ''}" onclick="setDay('${d}')"><span>${nd.toLocaleDateString('pt-BR', { weekday: 'narrow' }).toUpperCase()}</span><b>${nd.getDate()}</b></button>`);
+  }
 
   view.innerHTML = `
     <header class="page-head">
@@ -71,13 +79,7 @@ export default async function mealsScreen(view) {
       <button class="icon-btn" data-add aria-label="Nova refeição">${icon('plus', 20)}</button>
     </header>
 
-    <div class="row" style="margin:-6px 0 14px;gap:8px">
-      <button class="icon-btn" data-day="-1" aria-label="Dia anterior">${icon('left', 18)}</button>
-      <button class="btn btn-sm btn-ghost" data-today style="flex:1" ${isToday ? 'disabled' : ''}>
-        ${icon('calendar', 15)} ${humanDate(cursor)}
-      </button>
-      <button class="icon-btn" data-day="1" aria-label="Próximo dia" ${canGoForward ? '' : 'disabled style="opacity:.35"'}>${icon('right', 18)}</button>
-    </div>
+    <div class="days">${daysHtml.join('')}</div>
 
     <div class="stack">
       ${macrosCard}
@@ -88,25 +90,12 @@ export default async function mealsScreen(view) {
     </div>`;
 
   view.querySelector('[data-add]')?.addEventListener('click', () => mealSheet({ date: cursor, onDone: refresh }));
-  view.querySelector('[data-today]')?.addEventListener('click', () => {
-    cursor = todayISO();
-    refresh();
-  });
-  view.querySelectorAll('[data-day]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const next = addDays(cursor, Number(btn.dataset.day));
-      if (next > today) return;
-      cursor = next;
-      refresh();
-    });
-  });
 
-  view.querySelectorAll('[data-meal]').forEach((el) => {
-    el.addEventListener('click', () => {
-      const meal = meals.find((m) => m.id === el.dataset.meal);
-      if (meal) openMealDetail(meal);
-    });
-  });
+  // global day setter
+  window.setDay = (d) => {
+    cursor = d;
+    refresh();
+  };
 }
 
 async function openMealDetail(meal) {

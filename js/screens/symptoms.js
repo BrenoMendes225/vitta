@@ -8,10 +8,10 @@ import { symptomSheet } from '../forms.js';
 import { refresh, back } from '../router.js';
 
 const SCALE = [
-  { key: 'nausea', label: 'Náusea', color: 'var(--amber)' },
-  { key: 'constipation', label: 'Intestino', color: 'var(--water)' },
-  { key: 'fatigue', label: 'Cansaço', color: 'var(--protein)' },
-  { key: 'appetite', label: 'Apetite', color: 'var(--accent)' },
+  { key: 'nausea', label: 'Náusea', color: 'var(--a)' },
+  { key: 'constipation', label: 'Intestino', color: 'var(--w)' },
+  { key: 'fatigue', label: 'Cansaço', color: 'var(--p)' },
+  { key: 'appetite', label: 'Apetite', color: 'var(--ok)' },
 ];
 
 export default async function symptomsScreen(view) {
@@ -30,7 +30,7 @@ export default async function symptomsScreen(view) {
           ${SCALE.map((s) => `<div>
             <p class="tiny muted" style="margin:0 0 4px">${s.label}</p>
             <div class="row" style="gap:6px;justify-content:flex-start">
-              <span class="strong" style="font-size:18px;color:${Number(todayRow[s.key]) >= 3 ? s.color : 'var(--text)'}">${fmtNum(todayRow[s.key] ?? 0, 0)}</span>
+              <span class="strong" style="font-size:18px;color:${Number(todayRow[s.key]) >= 3 ? s.color : 'var(--ink)'}">${fmtNum(todayRow[s.key] ?? 0, 0)}</span>
               <span class="tiny muted">/ 5</span>
             </div>
           </div>`).join('')}

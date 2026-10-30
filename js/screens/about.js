@@ -19,7 +19,7 @@ export default async function aboutScreen(view) {
     <div class="stack">
       <section class="card">
         <div class="row start" style="gap:12px">
-          <span style="width:44px;height:44px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none">
+          <span style="width:44px;height:44px;border-radius:14px;background:var(--p);color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 4px 16px color-mix(in srgb, var(--p) 50%, transparent)">
             ${icon('activity', 24, 2)}
           </span>
           <div>
@@ -38,7 +38,7 @@ export default async function aboutScreen(view) {
         <ul class="small muted" style="margin:0;padding-left:18px;line-height:1.7">
           <li>Todos os registros e fotos ficam no armazenamento do seu aparelho (IndexedDB).</li>
           <li>Não há servidor, login ou conta. Ninguém além de você acessa os dados.</li>
-          <li>A única saída de dados é a foto/texto da refeição enviada ao Google Gemini, quando você toca em “Analisar com IA”.</li>
+          <li>A única saída de dados é a foto/texto da refeição enviada ao Google Gemini, quando você toca em "Analisar com IA".</li>
           <li>Ao apagar os dados do Safari, os registros vão junto. Exporte um backup de vez em quando.</li>
         </ul>
       </section>

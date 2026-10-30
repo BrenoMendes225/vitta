@@ -1,4 +1,4 @@
-/* Tela Peso — gráfico com média móvel, histórico e medidas corporais. */
+/* Tela Peso — gráfico com área gradiente, strip de fotos, histórico. */
 
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
@@ -6,7 +6,7 @@ import { fmtNum, fmtKg, signed, esc, emptyState } from '../ui.js';
 import * as db from '../db.js';
 import { todayISO, addDays, humanDate, fmtMonthYear, diffDays } from '../date.js';
 import { weightSummary, movingAverage, sortAsc } from '../stats.js';
-import { lineChart } from '../charts.js';
+import { weightChart } from '../charts.js';
 import { weightSheet } from '../forms.js';
 import { refresh, go } from '../router.js';
 
@@ -34,17 +34,17 @@ export default async function weightScreen(view) {
     ? summary.latest.value / Math.pow(Number(state.settings.height) / 100, 2)
     : null;
 
-  const rangeSeg = `
-    <div class="seg" data-range style="width:190px">
-      ${[['30', '30d'], ['90', '90d'], ['all', 'tudo']].map(([v, l]) => `
-        <button type="button" data-value="${v}" class="${range === v ? 'on' : ''}">${l}</button>`).join('')}
+  const rangePills = `
+    <div class="rg">
+      ${[['30', '30 dias'], ['90', '90 dias'], ['all', 'Tudo']].map(([v, l]) => `
+        <button class="${range === v ? 'on' : ''}" onclick="setRange('${v}')">${l}</button>`).join('')}
     </div>`;
 
   const chartCard = points.length
     ? `<section class="card">
         <div class="row" style="margin-bottom:4px">
           <p class="card-title" style="margin:0">Evolução</p>
-          ${rangeSeg}
+          ${rangePills}
         </div>
         <div class="row" style="align-items:flex-end;margin:10px 0 0">
           <div>
@@ -54,21 +54,21 @@ export default async function weightScreen(view) {
           <div style="text-align:right">
             <p class="small" style="margin:0">
               ${summary.delta7 != null
-                ? `<span class="delta ${summary.delta7 < -0.05 ? 'down' : 'flat'}">${signed(summary.delta7)} kg</span>`
+                ? `<span class="delta ${summary.delta7 < -0.05 ? 'dn' : summary.delta7 > 0.05 ? 'up' : 'flat'}">${signed(summary.delta7)} kg</span>`
                 : '<span class="muted">—</span>'}
             </p>
             <p class="tiny muted" style="margin:2px 0 0">vs. semana anterior</p>
           </div>
         </div>
-        ${lineChart({ points, goal: summary.goalWeight, height: 200 })}
+        ${weightChart(points, summary.goalWeight)}
         <div class="row" style="margin-top:6px">
-          <span class="tiny muted">linha cheia = média de 7 dias · pontos = registros</span>
+          <span class="tiny muted">área = média de 7 dias · círculo = último registro</span>
         </div>
       </section>`
     : `<section class="card">${emptyState(
-      'Nenhum peso registrado ainda.<br>Pese-se ao acordar, em jejum, e registre aqui.',
-      `<button class="btn btn-primary" data-add>Registrar peso</button>`,
-    )}</section>`;
+        'Nenhum peso registrado ainda.<br>Pese-se ao acordar, em jejum, e registre aqui.',
+        `<button class="btn btn-primary" data-add>Registrar peso</button>`,
+      )}</section>`;
 
   const statsCard = summary.latest
     ? `<div class="grid-3">
@@ -87,7 +87,7 @@ export default async function weightScreen(view) {
       </div>
       ${summary.progress != null ? `<section class="card tight">
         <div class="row"><span class="small strong">Progresso até a meta</span><span class="small muted">${fmtNum(summary.progress * 100, 0)}%</span></div>
-        ${`<div class="bar"><i style="width:${(summary.progress * 100).toFixed(1)}%"></i></div>`}
+        <div class="bar"><i style="width:${(summary.progress * 100).toFixed(1)}%"></i></div>
         <p class="tiny muted" style="margin:8px 0 0">${fmtKg(summary.startWeight)} kg → ${fmtKg(summary.goalWeight)} kg${bmi ? ` · IMC ${fmtNum(bmi, 1)} (${bmiLabel(bmi)})` : ''}</p>
       </section>` : ''}`
     : '';
@@ -100,26 +100,40 @@ export default async function weightScreen(view) {
     groups.get(key).push(row);
   }
 
+  /* photo strip — horizontal scroll */
+  const photoStrip = photos.length
+    ? `<div class="card">
+        <h2 class="card-title">${icon('photo', 16)} Fotos de progresso</h2>
+        <div class="strip">
+          ${photos.map((p, i) => p.kind === 'weight' && p.url ? `
+            <button class="ph" onclick="zoom(${i})">
+              <img src="${p.url}" alt="Foto de ${p.meta?.date || ''}">
+              <span>${p.meta?.date ? humanDate(p.meta.date) : ''} · ${p.meta?.kg ? fmtKg(p.meta.kg) : ''}</span>
+            </button>` : '').join('')}
+        </div>
+      </div>`
+    : '';
+
   const history = sortedDesc.length
     ? [...groups.entries()].map(([key, rows]) => {
-      const first = rows[0].date;
-      return `<section class="card tight">
-        <p class="card-label" style="margin-bottom:2px">${fmtMonthYear(first)}</p>
-        <div class="list">
-          ${rows.map((r) => {
-            const prev = sortAsc(weights).filter((x) => x.date < r.date).pop();
-            const delta = prev ? Number(r.kg) - Number(prev.kg) : null;
-            return `<button class="list-item press" data-edit="${r.id}">
-              <div class="li-main">
-                <div class="li-title">${fmtKg(r.kg)} kg ${r.photoId ? `<span class="muted" style="font-weight:400">· foto</span>` : ''}</div>
-                <div class="li-sub">${humanDate(r.date)}${r.note ? ` · ${esc(r.note)}` : ''}</div>
-              </div>
-              <div class="li-end">${delta != null ? `<span class="delta ${delta < -0.05 ? 'down' : delta > 0.05 ? 'up' : 'flat'}">${signed(delta)}</span>` : ''}</div>
-            </button>`;
-          }).join('')}
-        </div>
-      </section>`;
-    }).join('')
+        const first = rows[0].date;
+        return `<section class="card tight">
+          <p class="card-label" style="margin-bottom:2px">${fmtMonthYear(first)}</p>
+          <div class="list">
+            ${rows.map((r) => {
+              const prev = sortAsc(weights).filter((x) => x.date < r.date).pop();
+              const delta = prev ? Number(r.kg) - Number(prev.kg) : null;
+              return `<button class="list-item press" data-edit="${r.id}">
+                <div class="li-main">
+                  <div class="li-title">${fmtKg(r.kg)} kg ${r.photoId ? `<span class="muted" style="font-weight:400">· foto</span>` : ''}</div>
+                  <div class="li-sub">${humanDate(r.date)}${r.note ? ` · ${esc(r.note)}` : ''}</div>
+                </div>
+                <div class="li-end">${delta != null ? `<span class="delta ${delta < -0.05 ? 'dn' : delta > 0.05 ? 'up' : 'flat'}">${signed(delta)}</span>` : ''}</div>
+              </button>`;
+            }).join('')}
+          </div>
+        </section>`;
+      }).join('')
     : '';
 
   view.innerHTML = `
@@ -135,24 +149,21 @@ export default async function weightScreen(view) {
     <div class="stack">
       ${chartCard}
       ${statsCard}
+      ${photoStrip}
 
       <div class="row" style="padding:4px 2px 0">
         <span class="small strong muted" style="letter-spacing:.03em;text-transform:uppercase;font-size:11px">Histórico</span>
-        <button class="btn btn-sm btn-soft" data-photos>${icon('photo', 15)} Fotos${photos.length ? ` (${photos.length})` : ''}</button>
       </div>
       ${history || emptyState('Seus registros aparecem aqui.')}
     </div>`;
 
   view.querySelector('[data-add]')?.addEventListener('click', () => weightSheet({ onDone: refresh }));
-  view.querySelector('[data-photos]')?.addEventListener('click', () => go('peso/fotos'));
 
-  view.querySelectorAll('[data-range] button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      range = btn.dataset.value;
-      view.querySelectorAll('[data-range] button').forEach((b) => b.classList.toggle('on', b === btn));
-      refresh({ keepScroll: true });
-    });
-  });
+  // range pills - delegado no window
+  window.setRange = (v) => {
+    range = v;
+    refresh({ keepScroll: true });
+  };
 
   view.querySelectorAll('[data-edit]').forEach((el) => {
     el.addEventListener('click', () => {
@@ -161,3 +172,15 @@ export default async function weightScreen(view) {
     });
   });
 }
+
+/* zoom photo — global */
+window.zoom = (i) => {
+  const photos = JSON.parse(localStorage.getItem('vitta_photos') || '[]');
+  const p = photos[i];
+  if (!p || !p.url) return;
+  import('./app.js').then(m => m.openSheet(`
+    <img class="zi" src="${p.url}" alt="">
+    <h2>${fmtKg(p.meta?.kg || 0)} kg</h2>
+    <div class="mut">${p.meta?.date || ''}</div>
+  `));
+};

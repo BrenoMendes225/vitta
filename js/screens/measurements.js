@@ -34,7 +34,7 @@ export default async function measurementsScreen(view) {
               <p style="margin:0;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums">
                 ${fmtNum(latest[m.key], 1)} <span class="tiny muted">cm</span>
               </p>
-              ${delta != null ? `<p class="tiny" style="margin:2px 0 0;color:${delta < 0 ? 'var(--accent)' : 'var(--muted)'}">${signed(delta, 1)} cm</p>` : ''}
+              ${delta != null ? `<p class="tiny" style="margin:2px 0 0;color:${delta < 0 ? 'var(--ok)' : 'var(--mut)'}">${signed(delta, 1)} cm</p>` : ''}
             </div>`;
           }).join('')}
         </div>
@@ -42,9 +42,9 @@ export default async function measurementsScreen(view) {
         <button class="btn btn-soft btn-block" data-add style="margin-top:14px">${icon('ruler', 17)} Nova medição</button>
       </section>`
     : `<section class="card">${emptyState(
-      'A balança trava, mas a fita métrica continua mostrando progresso.<br>Registre a primeira medição.',
-      `<button class="btn btn-primary" data-add>Registrar medidas</button>`,
-    )}</section>`;
+        'A balança trava, mas a fita métrica continua mostrando progresso.<br>Registre a primeira medição.',
+        `<button class="btn btn-primary" data-add>Registrar medidas</button>`,
+      )}</section>`;
 
   const history = rows.slice().reverse().slice(1).length
     ? `<section class="card tight">

@@ -1,12 +1,12 @@
-/* Tela Hoje — o painel principal. */
+/* Tela Hoje — o painel principal com anéis de progresso. */
 
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, fmtKg, fmtVol, progressBar, esc, toast } from '../ui.js';
+import { fmtNum, fmtKg, fmtVol, esc, toast } from '../ui.js';
 import * as db from '../db.js';
 import { todayISO, humanDate, greeting, fmtShort, relativeDays, cap } from '../date.js';
 import { weightSummary, mealTotals } from '../stats.js';
-import { sparkline } from '../charts.js';
+import { ringChart } from '../charts.js';
 import { getWater, addWater } from '../water.js';
 import { nextInjection, doseLabel } from '../schedule.js';
 import { weightSheet, waterSheet, mealSheet, injectionSheet, symptomSheet } from '../forms.js';
@@ -27,7 +27,12 @@ export default async function todayScreen(view) {
   const totals = mealTotals(meals);
   const next = nextInjection(state.settings, injections);
   const firstName = (state.settings.name || '').trim().split(' ')[0];
-  const spark = summary.daily.slice(-14).map((p) => ({ date: p.date, value: p.value }));
+
+  /* anéis: água (externa), proteína (média), aplicação (interna) */
+  const waterPct = g.water ? Math.min(1, water / g.water) : 0;
+  const proteinPct = g.protein ? Math.min(1, totals.protein / g.protein) : 0;
+  const cycPct = next ? (7 - next.days) / 7 : 0;
+  const overallPct = Math.round(((waterPct + proteinPct) / 2 + cycPct) * 100 / 3);
 
   const weightBlock = summary.latest
     ? `
@@ -37,21 +42,18 @@ export default async function todayScreen(view) {
           <p class="big">${fmtKg(summary.latest.value)}<span class="unit">kg</span></p>
           <p class="small" style="margin:8px 0 0">
             ${summary.delta7 != null
-              ? `<span class="delta ${summary.delta7 < -0.05 ? 'down' : summary.delta7 > 0.05 ? 'up' : 'flat'}">
-                   ${summary.delta7 < -0.05 ? '↓' : summary.delta7 > 0.05 ? '↑' : '→'} ${fmtNum(Math.abs(summary.delta7), 1)} kg
+              ? `<span class="delta ${summary.delta7 < -0.05 ? 'dn' : summary.delta7 > 0.05 ? 'up' : 'flat'}">
+                   ${summary.delta7 < -0.05 ? '−' : summary.delta7 > 0.05 ? '+' : '±'} ${fmtNum(Math.abs(summary.delta7), 1)} kg
                  </span> <span class="muted">na média de 7 dias</span>`
               : '<span class="muted">primeiro registro</span>'}
           </p>
         </div>
-        <div style="margin-bottom:2px">${sparkline(spark, { width: 96, height: 42 })}</div>
+        <div style="margin-bottom:2px">${icon('activity', 36)}</div>
       </div>`
     : `
       <p class="card-label">Peso</p>
       <p class="big muted" style="font-size:26px">sem registros</p>
       <p class="small muted" style="margin:8px 0 0">Comece pesando hoje de manhã, em jejum.</p>`;
-
-  const waterPct = g.water ? Math.min(100, (water / g.water) * 100) : 0;
-  const proteinRemaining = Math.max(0, g.protein - totals.protein);
 
   const injectionBlock = next
     ? `<div class="row">
@@ -86,45 +88,22 @@ export default async function todayScreen(view) {
     </header>
 
     <div class="stack">
+      <section class="card hero">
+        <div class="ringw">${ringChart([
+          { r: 88, pct: waterPct, color: 'var(--w)', label: 'Água' },
+          { r: 68, pct: proteinPct, color: 'var(--p)', label: 'Proteína' },
+          { r: 48, pct: cycPct, color: 'var(--a)', label: 'Aplicação' },
+        ], overallPct)}</div>
+        <div class="lg"><i style="background:var(--w)"></i><div><b>Água</b><span>${fmtVol(water)} de ${fmtVol(g.water)} L</span></div></div>
+        <div class="lg"><i style="background:var(--p)"></i><div><b>Proteína</b><span>${fmtNum(totals.protein, 0)} de ${fmtNum(g.protein, 0)} g</span></div></div>
+        <div class="lg"><i style="background:var(--a)"></i><div><b>Aplicação</b><span>${next ? (next.days > 0 ? `em ${relativeDays(next.date)}` : next.days === 0 ? 'hoje' : `atrasada ${Math.abs(next.days)}d`) : 'não configurada'}</span></div></div>
+      </section>
+
       <section class="card">
         ${weightBlock}
         <button class="btn btn-soft btn-block" data-act="weight" style="margin-top:14px">
           ${icon('scale', 18)} ${summary.latest ? 'Pesar de novo' : 'Registrar peso'}
         </button>
-      </section>
-
-      <div class="grid-2">
-        <section class="card tight">
-          <div class="row">
-            <p class="card-label">Água</p>
-            <span style="color:var(--water)">${icon('drop', 16)}</span>
-          </div>
-          <p class="metric">${fmtVol(water)} <span class="tiny muted">/ ${fmtVol(g.water)} L</span></p>
-          ${progressBar(water, g.water, 'water')}
-          <div class="row" style="margin-top:10px;gap:6px">
-            <button class="btn btn-sm btn-soft water" data-water="250" style="flex:1">+250</button>
-            <button class="btn btn-sm btn-soft water" data-water="500" style="flex:1">+500</button>
-          </div>
-          <p class="tiny muted" style="margin:8px 0 0">${water >= g.water ? 'meta batida ✓' : `${fmtVol(g.water - water)} L restantes`}</p>
-        </section>
-
-        <section class="card tight">
-          <div class="row">
-            <p class="card-label">Proteína</p>
-            <span style="color:var(--protein)">${icon('activity', 16)}</span>
-          </div>
-          <p class="metric">${fmtNum(totals.protein, 0)} <span class="tiny muted">/ ${fmtNum(g.protein, 0)} g</span></p>
-          ${progressBar(totals.protein, g.protein, 'protein')}
-          <p class="tiny" style="margin:10px 0 0;color:${proteinRemaining > 0 ? 'var(--protein)' : 'var(--accent)'};font-weight:650">
-            ${g.protein ? (proteinRemaining > 0 ? `faltam ${fmtNum(proteinRemaining, 0)} g` : 'meta batida ✓') : 'defina a meta'}
-          </p>
-          <p class="tiny muted" style="margin:3px 0 0">${meals.length} refeiç${meals.length === 1 ? 'ão' : 'ões'} hoje</p>
-        </section>
-      </div>
-
-      <section class="card">
-        <p class="card-title">${icon('syringe', 16)} Aplicação</p>
-        ${injectionBlock}
       </section>
 
       <div class="quick-grid">

@@ -36,7 +36,7 @@ export default async function settingsScreen(view) {
     <form id="settings-form" class="stack" novalidate>
 
       <section class="card">
-        <p class="card-title">${icon('user', 16) || ''} Perfil</p>
+        <p class="card-title">${icon('user', 16)} Perfil</p>
         <div class="form-grid">
           ${field({ label: 'Nome', name: 'name', value: st.name || '', placeholder: 'como quer ser chamado' })}
           ${field({ label: 'Nascimento', name: 'birthDate', type: 'date', value: st.birthDate || '' })}
@@ -156,7 +156,7 @@ export default async function settingsScreen(view) {
     try {
       await saveSettings(collect());
       const reply = await testKey();
-      status.innerHTML = `<div class="insight">Conectado. A IA respondeu: “${esc(reply.slice(0, 60))}”</div>`;
+      status.innerHTML = `<div class="insight">Conectado. A IA respondeu: "${esc(reply.slice(0, 60))}"</div>`;
     } catch (err) {
       status.innerHTML = `<div class="insight warn">${esc(err.message)}</div>`;
     } finally {

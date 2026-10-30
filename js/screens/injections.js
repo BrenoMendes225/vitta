@@ -4,7 +4,7 @@ import { state } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, esc, emptyState } from '../ui.js';
 import * as db from '../db.js';
-import { todayISO, humanDate, fmtLong, weekday, relativeDays, fmtMonthYear, cap } from '../date.js';
+import { todayISO, humanDate, fmtLong, weekday, relativeDays, fmtMonthYear, cap, addDays } from '../date.js';
 import { nextInjection, siteUsage, sortInjections, doseLabel } from '../schedule.js';
 import { injectionSheet } from '../forms.js';
 import { refresh, go } from '../router.js';
@@ -16,6 +16,13 @@ export default async function injectionsScreen(view) {
   const next = nextInjection(state.settings, injections);
   const sites = cfg.sites?.length ? cfg.sites : ['abdômen D', 'abdômen E', 'coxa D', 'coxa E'];
   const usage = siteUsage(injections, sites);
+
+  /* week progress bar (7 dots) */
+  let weekDots = '';
+  if (next) {
+    const dl = Math.max(0, Math.min(7, 7 - next.days));
+    weekDots = `<div class="wk" aria-hidden="true">${[0,1,2,3,4,5,6].map(i => `<i class="${i < dl ? 'f' : ''}"></i>`).join('')}</div>`;
+  }
 
   const hero = next
     ? `<section class="card">
@@ -37,6 +44,7 @@ export default async function injectionsScreen(view) {
             <span class="strong">${esc(next.site || '—')}</span>
           </div>
         </div>
+        ${weekDots}
         <button class="btn btn-primary btn-block" data-add style="margin-top:16px">
           ${icon('syringe', 18)} Registrar aplicação
         </button>

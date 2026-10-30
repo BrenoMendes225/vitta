@@ -3,6 +3,7 @@
 import { loadSettings, state, APP } from './store.js';
 import { startRouter, go, parsePath } from './router.js';
 import { icon } from './icons.js';
+import { toast } from './ui.js';
 
 const TABS = [
   { tab: 'hoje', path: 'hoje', label: 'Hoje', icon: 'home' },
@@ -19,7 +20,50 @@ function buildTabbar() {
       ${icon(t.icon, 23, 1.9)}
       <span>${t.label}</span>
     </a>`).join('');
+  
+  // marca tab ativa
+  const cur = parsePath();
+  nav.querySelectorAll('a').forEach(a => {
+    if (a.getAttribute('href') === `#/${cur}`) a.classList.add('on');
+  });
 }
+
+/* ---------- FAB + Menu de ações rápidas ---------- */
+
+function openQuickMenu() {
+  const actions = [
+    { label: 'Registrar peso', desc: 'Balança e foto opcional', color: 'var(--p)', icon: 'scale', fn: 'openWeightSheet()' },
+    { label: 'Registrar refeição', desc: 'Texto, proteína e foto', color: 'var(--a)', icon: 'bowl', fn: 'openMealSheet()' },
+    { label: 'Registrar aplicação', desc: 'Dose e local', color: 'var(--w)', icon: 'syringe', fn: 'openInjectionSheet()' },
+    { label: 'Ajustar metas', desc: 'Água, proteína, peso meta', color: 'var(--ok)', icon: 'target', fn: 'openGoalsSheet()' },
+  ];
+  
+  const html = `
+    <div class="sheet-head"><h2>O que registrar?</h2></div>
+    <div class="sheet-body">
+      ${actions.map(a => `
+        <button class="act" onclick="${a.fn}; closeSheet()">
+          <i style="background:${a.color}">${icon(a.icon, 22, 2)}</i>
+          <div>${a.label}<span>${a.desc}</span></div>
+        </button>`).join('')}
+    </div>`;
+  
+  openSheet(html);
+}
+
+// Funções globais para onclick inline nos screens
+window.openQuickMenu = openQuickMenu;
+window.closeSheet = () => document.body.classList.remove('so');
+window.openSheet = (html) => {
+  document.getElementById('sh').innerHTML = '<div class="grab"></div>' + html;
+  document.body.classList.add('so');
+};
+
+// Delegação para sheets que precisam chamar funções dos screens
+window.openWeightSheet = () => import('./forms.js').then(m => m.openWeightSheet());
+window.openMealSheet = () => import('./forms.js').then(m => m.openMealSheet());
+window.openInjectionSheet = () => import('./forms.js').then(m => m.openInjectionSheet());
+window.openGoalsSheet = () => import('./forms.js').then(m => m.openGoalsSheet());
 
 async function boot() {
   document.documentElement.style.setProperty('--app-name', `"${APP.name}"`);
@@ -29,6 +73,9 @@ async function boot() {
   if (!state.settings.onboarded && parsePath() !== 'bemvindo') {
     location.replace('#/bemvindo');
   }
+
+  // FAB click
+  document.querySelector('.fab')?.addEventListener('click', openQuickMenu);
 
   startRouter();
 }

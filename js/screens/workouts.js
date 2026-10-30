@@ -50,9 +50,9 @@ export default async function workoutsScreen(view) {
         </div>
       </section>`
     : `<section class="card">${emptyState(
-      'Nenhum treino registrado.<br>Musculação ajuda a preservar massa magra durante o emagrecimento.',
-      `<button class="btn btn-primary" data-add>Registrar treino</button>`,
-    )}</section>`;
+        'Nenhum treino registrado.<br>Musculação ajuda a preservar massa magra durante o emagrecimento.',
+        `<button class="btn btn-primary" data-add>Registrar treino</button>`,
+      )}</section>`;
 
   view.innerHTML = `
     <header class="page-head">

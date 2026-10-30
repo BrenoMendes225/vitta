@@ -1,4 +1,4 @@
-/* Componentes de interface: folhas (sheets), toasts, campos e formatação. */
+/* Componentes de interface: folhas (bottom sheets), toasts, campos e formatação. */
 
 import { icon } from './icons.js';
 
@@ -7,7 +7,7 @@ export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' }[c]
   ));
 }
 
@@ -24,7 +24,6 @@ export function fmtL(ml) {
   return fmtNum(Number(ml) / 1000, 2);
 }
 
-/** Volume em litros sem zeros à toa: 0,5 / 1,25 / 2. */
 export function fmtVol(ml) {
   const n = Number(ml) / 1000;
   return Number.isFinite(n)
@@ -55,34 +54,17 @@ export function signed(v, dec = 1) {
 /* ---------- toast ---------- */
 
 export function toast(message, kind = 'ok') {
-  const root = document.getElementById('toast-root');
-  const el = document.createElement('div');
-  el.className = `toast ${kind === 'error' ? 'error' : ''}`;
-  el.innerHTML = `${icon(kind === 'error' ? 'alert' : 'check', 15, 2.2)}<span>${esc(message)}</span>`;
-  root.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('out');
-    setTimeout(() => el.remove(), 260);
-  }, 2400);
+  const tt = document.getElementById('tt');
+  if (!tt) return;
+  tt.textContent = message;
+  tt.classList.add('on');
+  setTimeout(() => tt.classList.remove('on'), 2200);
 }
 
-/* ---------- sheet ---------- */
+/* ---------- bottom sheet (novo sistema com #sh / #bd) ---------- */
 
-let current = null;
-
-export function closeSheet(immediate = false) {
-  if (!current) return;
-  const { backdrop, restore, onClose } = current;
-  current = null;
-  onClose?.();
-  backdrop.classList.remove('show');
-  const done = () => {
-    backdrop.remove();
-    restore?.();
-    if (!document.querySelector('.sheet-backdrop')) document.body.style.overflow = '';
-  };
-  if (immediate) done();
-  else setTimeout(done, 240);
+export function closeSheet() {
+  document.body.classList.remove('so');
 }
 
 export function openSheet({
@@ -96,51 +78,37 @@ export function openSheet({
   danger = false,
   hideSubmit = false,
   hideCancel = false,
-  wide = false,
 }) {
-  closeSheet(true);
+  closeSheet();
 
-  const root = document.getElementById('sheet-root');
-  const backdrop = document.createElement('div');
-  backdrop.className = 'sheet-backdrop';
   const submitHtml = hideSubmit
     ? ''
     : `<button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" type="submit">${esc(submitLabel)}</button>`;
   const cancelHtml = hideCancel
     ? ''
-    : `<button class="btn btn-ghost" type="button" data-close>${esc(cancelLabel)}</button>`;
+    : `<button class="btn btn-sec" type="button" data-close>${esc(cancelLabel)}</button>`;
 
-  backdrop.innerHTML = `
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="sheet-grabber"></div>
-      <div class="sheet-head">
-        <h2>${esc(title)}</h2>
-        <button class="icon-btn bare" type="button" data-close aria-label="Fechar">${icon('x', 18, 2)}</button>
-      </div>
-      <form class="sheet-form" novalidate>
-        <div class="sheet-body">${body}</div>
-        ${hideSubmit && hideCancel ? '' : `<div class="sheet-foot">${cancelHtml}${submitHtml}</div>`}
-      </form>
-    </div>`;
+  const html = `
+    <div class="sheet-head">
+      <h2>${esc(title)}</h2>
+      <button class="icon-btn bare" type="button" data-close aria-label="Fechar">${icon('x', 18, 2)}</button>
+    </div>
+    <form class="sheet-body" novalidate>
+      ${body}
+      ${hideSubmit && hideCancel ? '' : `<div class="sheet-foot">${cancelHtml}${submitHtml}</div>`}
+    </form>`;
 
-  const scrollY = window.scrollY;
-  const restore = () => {
-    document.body.style.overflow = '';
-    if (Math.abs(window.scrollY - scrollY) > 2) window.scrollTo(0, scrollY);
-  };
-  document.body.style.overflow = 'hidden';
+  const sh = document.getElementById('sh');
+  sh.innerHTML = '<div class="grab"></div>' + html;
+  document.body.classList.add('so');
 
-  root.appendChild(backdrop);
-  requestAnimationFrame(() => backdrop.classList.add('show'));
-
-  const form = $('form', backdrop);
+  const form = sh.querySelector('form');
   const api = {
-    backdrop,
     form,
-    close: () => closeSheet(),
+    close: closeSheet,
     onClose,
     setLoading(on) {
-      const btn = $('button[type="submit"]', form);
+      const btn = form.querySelector('button[type="submit"]');
       if (!btn) return;
       btn.disabled = on;
       if (on) {
@@ -151,13 +119,10 @@ export function openSheet({
       }
     },
   };
-  current = api;
 
-  backdrop.addEventListener('click', (e) => {
+  sh.addEventListener('click', (e) => {
     if (e.target.closest('[data-close]')) {
       e.preventDefault();
-      closeSheet();
-    } else if (e.target === backdrop) {
       closeSheet();
     }
   });
@@ -303,7 +268,7 @@ export function photoInput(name = 'photo') {
   return `<div class="field span-2">
     <label>Foto</label>
     <input type="file" name="${esc(name)}" accept="image/*" id="photo-${esc(name)}" hidden>
-    <label for="photo-${esc(name)}" class="btn btn-soft" style="width:100%">${icon('camera', 18)} Escolher / tirar foto</label>
+    <label for="photo-${esc(name)}" class="btn btn-sec" style="width:100%">${icon('camera', 18)} Escolher / tirar foto</label>
     <div class="photo-preview hidden" data-preview="${esc(name)}"></div>
     <span class="hint">A foto fica só no seu aparelho.</span>
   </div>`;

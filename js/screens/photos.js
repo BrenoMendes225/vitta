@@ -70,9 +70,9 @@ export default async function photosScreen(view) {
             </div>
           </section>`
         : `<section class="card">${emptyState(
-          'Tire uma foto agora para ter um “antes” guardado.<br>O espelho engana, a foto não.',
-          `<button class="btn btn-primary" data-add>Adicionar foto</button>`,
-        )}</section>`}
+            'Tire uma foto agora para ter um "antes" guardado.<br>O espelho engana, a foto não.',
+            `<button class="btn btn-primary" data-add>Adicionar foto</button>`,
+          )}</section>`}
 
       <p class="disclaimer">As fotos ficam apenas neste aparelho. Use boa luz, mesma pose e mesmo horário para comparar melhor.</p>
     </div>`;
@@ -116,7 +116,7 @@ function viewPhoto(photo) {
       <p class="small muted" style="margin:0">${humanDate(photo.date)}</p>
       <button class="btn btn-danger btn-block" data-del>${icon('trash', 17)} Excluir foto</button>`,
     onMount: (form, sheet) => {
-      sheet.backdrop.querySelector('[data-del]').addEventListener('click', async () => {
+      sheet.form.querySelector('[data-del]').addEventListener('click', async () => {
         const ok = await confirmSheet({
           title: 'Excluir foto',
           message: 'A foto será apagada deste aparelho.',
