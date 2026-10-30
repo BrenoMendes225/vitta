@@ -12,7 +12,6 @@ import { compressImage, thumbnail } from './image.js';
 import { analyzeMeal } from './gemini.js';
 import { nextInjection, doseLabel } from './schedule.js';
 import { getWater, setWater } from './water.js';
-import { MOODS, REASONS, setMood, clearMood } from './daymood.js';
 
 /* ---------------- helpers para chips / pills ---------------- */
 
@@ -414,95 +413,6 @@ export function symptomSheet({ date = todayISO(), entry = null, onDone } = {}) {
   });
 }
 
-/* ---------------- dia ruim ---------------- */
-
-export function badDaySheet({ date = todayISO(), entry = null, onDone } = {}) {
-  const editing = !!entry;
-  const selected = entry?.mood || 'ruim';
-  const reasons = REASONS.map((r) => `
-    <button type="button" class="chip${entry?.reason === r ? ' on' : ''}" data-reason="${esc(r)}">${esc(r)}</button>`).join('');
-
-  const body = `
-    <p class="small muted" style="margin:0">
-      Marque o dia como difícil. O app vai baixar a cobrança, ostreak não quebra
-      e nada é apagado — é só um dia ruim mesmo.
-    </p>
-
-    <div>
-      <span class="lb">Como foi o dia?</span>
-      <div class="chips" id="mood-chips">
-        ${Object.values(MOODS).map((m) => `
-          <button type="button" class="chip${m.key === selected ? ' on' : ''}" data-mood="${m.key}">${m.emoji} ${esc(m.label)}</button>`).join('')}
-      </div>
-      <input type="hidden" name="mood" id="mood-hidden" value="${selected}">
-    </div>
-
-    <div>
-      <span class="lb">O que aconteceu?</span>
-      <div class="chips" id="reason-chips">
-        ${reasons}
-      </div>
-      <input type="hidden" name="reason" id="reason-hidden" value="${esc(entry?.reason || '')}">
-    </div>
-
-    ${field({
-      label: 'Quer anotar algo? (opcional)', name: 'note', type: 'textarea', rows: 3,
-      value: entry?.note || '',
-      placeholder: 'Pode ser qualquer coisa. Ninguém vai ler além de você.',
-    })}
-
-    ${editing ? `<button type="button" class="btn btn-ghost btn-block" data-clear>Desmarcar este dia</button>` : ''}`;
-
-  openSheet({
-    title: editing ? 'Dia difícil' : 'Marcar dia difícil',
-    submitLabel: editing ? 'Salvar' : 'Salvar dia difícil',
-    body,
-    onMount: (form) => {
-      const moodHidden = form.querySelector('#mood-hidden');
-      const reasonHidden = form.querySelector('#reason-hidden');
-
-      form.querySelectorAll('#mood-chips .chip').forEach((chip) => {
-        chip.addEventListener('click', () => {
-          form.querySelectorAll('#mood-chips .chip').forEach((c) => c.classList.remove('on'));
-          chip.classList.add('on');
-          moodHidden.value = chip.dataset.mood;
-        });
-      });
-
-      form.querySelectorAll('#reason-chips .chip').forEach((chip) => {
-        chip.addEventListener('click', () => {
-          const was = chip.classList.contains('on');
-          form.querySelectorAll('#reason-chips .chip').forEach((c) => c.classList.remove('on'));
-          if (was) {
-            reasonHidden.value = '';
-          } else {
-            chip.classList.add('on');
-            reasonHidden.value = chip.dataset.reason;
-          }
-        });
-      });
-
-      form.querySelector('[data-clear]')?.addEventListener('click', async () => {
-        const ok = await confirmSheet({
-          title: 'Desmarcar o dia',
-          message: 'Este dia volta a ser um dia normal. Seus registros continuam intactos.',
-          confirmLabel: 'Desmarcar',
-          danger: false,
-        });
-        if (!ok) return;
-        await clearMood(date);
-        toast('Dia desmarcado');
-        onDone?.();
-      });
-    },
-    onSubmit: async (form) => {
-      await setMood(date, str(form, 'mood') || 'ruim', str(form, 'note'), str(form, 'reason'));
-      toast('Sem cobrança hoje. Você fez o suficiente.');
-      onDone?.();
-    },
-  });
-}
-
 /* ---------------- metas (goals) ---------------- */
 
 export function goalsSheet({ onDone } = {}) {
@@ -535,4 +445,3 @@ export function openWeightSheet() { weightSheet({ onDone: () => import('./router
 export function openMealSheet() { mealSheet({ onDone: () => import('./router.js').then(m => m.refresh()) }); }
 export function openInjectionSheet() { injectionSheet({ onDone: () => import('./router.js').then(m => m.refresh()) }); }
 export function openGoalsSheet() { goalsSheet({ onDone: () => import('./router.js').then(m => m.refresh()) }); }
-export function openBadDaySheet(date) { badDaySheet({ date, onDone: () => import('./router.js').then(m => m.refresh()) }); }

@@ -13,7 +13,6 @@ const DEFS = {
   symptoms: { key: 'id', idx: ['date'] },
   workouts: { key: 'id', idx: ['date'] },
   photos: { key: 'id', idx: ['date'] },
-  daymoods: { key: 'id', idx: ['date'] },
 };
 
 let dbPromise = null;

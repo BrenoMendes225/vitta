@@ -5,7 +5,6 @@ import { field, selectField, str, num, esc, emptyState, openSheet, confirmSheet,
 import * as db from '../db.js';
 import { todayISO, humanDate, addDays, startOfWeek, diffDays } from '../date.js';
 import { streak } from '../stats.js';
-import { streakWithBadDays, allMoods } from '../daymood.js';
 import { refresh, back } from '../router.js';
 
 const TYPES = ['Força', 'Cardio', 'Caminhada', 'Corrida', 'Pilates', 'Funcional', 'Outro'];
@@ -13,14 +12,10 @@ const TYPE_ICON = { Cardio: 'heart', Caminhada: 'activity', Corrida: 'trend', Pi
 
 export default async function workoutsScreen(view) {
   const today = todayISO();
-  const [rows, moods] = await Promise.all([
-    db.all('workouts').then((r) => r.sort((a, b) => a.date.localeCompare(b.date))),
-    allMoods(),
-  ]);
+  const rows = await db.all('workouts').then((r) => r.sort((a, b) => a.date.localeCompare(b.date)));
   const recent = rows.slice().reverse();
   const dates = [...new Set(rows.map((r) => r.date))];
-  const badDates = new Set(moods.map((m) => m.date));
-  const seq = streakWithBadDays(dates, today, badDates);
+  const seq = streak(dates, today);
   const weekStart = startOfWeek(today);
   const thisWeek = rows.filter((r) => r.date >= weekStart);
   const minutes = thisWeek.reduce((a, r) => a + (Number(r.minutes) || 0), 0);
@@ -29,7 +24,6 @@ export default async function workoutsScreen(view) {
     <section class="card tight center">
       <p class="card-label" style="font-size:10.5px">Sequência</p>
       <p class="metric" style="font-size:20px">${seq}<span class="tiny muted"> d</span></p>
-      ${badDates.size ? '<p class="tiny muted" style="margin:2px 0 0">dias difíceis não quebram</p>' : ''}
     </section>
     <section class="card tight center">
       <p class="card-label" style="font-size:10.5px">Semana</p>

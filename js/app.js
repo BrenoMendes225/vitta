@@ -30,7 +30,6 @@ function openQuickMenu() {
     { label: 'Registrar refeição', desc: 'Texto, proteína e foto', color: 'var(--a)', icon: 'bowl', fn: 'openMealSheet' },
     { label: 'Registrar aplicação', desc: 'Dose e local', color: 'var(--w)', icon: 'syringe', fn: 'openInjectionSheet' },
     { label: 'Ajustar metas', desc: 'Água, proteína, peso meta', color: 'var(--ok)', icon: 'target', fn: 'openGoalsSheet' },
-    { label: 'Marcar dia difícil', desc: 'Sem cobrança, sem culpa', color: 'var(--mut)', icon: 'moon', fn: 'openBadDaySheet' },
   ];
 
   openSheet({

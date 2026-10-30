@@ -9,23 +9,18 @@ import { weightSummary, mealTotals } from '../stats.js';
 import { ringChart, sparkline } from '../charts.js';
 import { getWater, addWater } from '../water.js';
 import { nextInjection, doseLabel } from '../schedule.js';
-import { weightSheet, waterSheet, mealSheet, injectionSheet, symptomSheet, badDaySheet } from '../forms.js';
-import { getMood, MOODS, randomSupport } from '../daymood.js';
+import { weightSheet, waterSheet, mealSheet, injectionSheet, symptomSheet } from '../forms.js';
 import { refresh, go } from '../router.js';
 
 export default async function todayScreen(view) {
   const today = todayISO();
-  const [weights, meals, injections, water, symptoms, moodRow] = await Promise.all([
+  const [weights, meals, injections, water, symptoms] = await Promise.all([
     db.all('weights'),
     db.byDate('meals', today),
     db.all('injections'),
     getWater(today),
     db.byDate('symptoms', today),
-    getMood(today),
   ]);
-
-  const mood = moodRow ? (MOODS[moodRow.mood] || MOODS.ruim) : null;
-  const badDay = !!mood;
 
   const g = goals();
   const summary = weightSummary(weights, state.settings);
@@ -79,19 +74,7 @@ export default async function todayScreen(view) {
     : `<p class="small muted" style="margin:0 0 12px">Defina o medicamento e o intervalo para o app calcular a próxima aplicação e o rodízio de local.</p>
        <button class="btn btn-soft btn-block" data-go="ajustes">Configurar</button>`;
 
-  const heroCard = badDay
-    ? `<section class="card hero soft">
-        <div class="soft-emoji">${mood.emoji}</div>
-        <h2 class="soft-title">${esc(mood.title)}</h2>
-        <p class="soft-msg">${esc(mood.message)}</p>
-        ${moodRow.note ? `<div class="insight" style="margin-top:14px">${esc(moodRow.note)}</div>` : ''}
-        ${moodRow.reason ? `<p class="tiny muted" style="margin:10px 0 0">Motivo registrado: ${esc(moodRow.reason)}</p>` : ''}
-        <p class="soft-support">${esc(randomSupport(today.split('-').join('')))}</p>
-        <button class="btn btn-soft btn-block" data-act="badday" style="margin-top:14px">
-          ${icon('moon', 17)} Ajustar este dia
-        </button>
-      </section>`
-    : `<section class="card hero">
+  const heroCard = `<section class="card hero">
         <div class="ringw">
           ${ringChart([
             { r: 88, pct: waterPct, color: 'var(--w)', label: 'Água' },
@@ -103,9 +86,6 @@ export default async function todayScreen(view) {
         <div class="lg"><i style="background:var(--w)"></i><div><b>Água</b><span>${fmtVol(water)} de ${fmtVol(g.water)} L</span></div></div>
         <div class="lg"><i style="background:var(--p)"></i><div><b>Proteína</b><span>${fmtNum(totals.protein, 0)} de ${fmtNum(g.protein, 0)} g</span></div></div>
         <div class="lg"><i style="background:var(--a)"></i><div><b>Aplicação</b><span>${next ? (next.days > 0 ? `em ${relativeDays(next.date)}` : next.days === 0 ? 'hoje' : `atrasada ${Math.abs(next.days)}d`) : 'não configurada'}</span></div></div>
-        <button class="btn btn-ghost btn-block" data-act="badday" style="margin-top:12px">
-          ${icon('moon', 16)} Hoje está sendo um dia difícil?
-        </button>
       </section>`;
 
   view.innerHTML = `
@@ -113,13 +93,11 @@ export default async function todayScreen(view) {
       <div>
         <p class="eyebrow">${cap(humanDate(today))}</p>
         <h1>${esc(greeting())}${firstName ? `, ${esc(firstName)}` : ''}</h1>
-        <p class="subhead">${badDay
-          ? 'Sem cobrança hoje.'
-          : summary.total != null && summary.total < -0.05
-            ? `Você já está ${fmtNum(Math.abs(summary.total), 1)} kg abaixo do início.`
-            : state.settings.goalWeight && summary.latest
-              ? `Faltam ${fmtNum(Math.max(0, summary.latest.value - state.settings.goalWeight), 1)} kg para a meta.`
-              : 'Um dia de cada vez.'}</p>
+        <p class="subhead">${summary.total != null && summary.total < -0.05
+          ? `Você já está ${fmtNum(Math.abs(summary.total), 1)} kg abaixo do início.`
+          : state.settings.goalWeight && summary.latest
+            ? `Faltam ${fmtNum(Math.max(0, summary.latest.value - state.settings.goalWeight), 1)} kg para a meta.`
+            : 'Um dia de cada vez.'}</p>
       </div>
       <button class="avatar" data-go="ajustes" aria-label="Ajustes">${esc((firstName || 'V')[0].toUpperCase())}</button>
     </header>
@@ -169,7 +147,6 @@ export default async function todayScreen(view) {
       if (act === 'meal') return mealSheet({ onDone: refresh });
       if (act === 'injection') return injectionSheet({ onDone: refresh });
       if (act === 'symptom') return symptomSheet({ onDone: refresh });
-      if (act === 'badday') return badDaySheet({ date: today, entry: moodRow, onDone: refresh });
     });
   });
 
