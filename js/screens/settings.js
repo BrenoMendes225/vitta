@@ -79,7 +79,7 @@ export default async function settingsScreen(view) {
             span2: true, hint: 'Fica só neste aparelho. Crie em aistudio.google.com/apikey.',
             autocomplete: 'new-password',
           })}
-          ${selectField({ label: 'Modelo', name: 'geminiModel', value: gem?.model || 'gemini-2.5-flash', options: MODELS, span2: true })}
+          ${selectField({ label: 'Modelo', name: 'geminiModel', value: gem?.model || 'gemini-3-flash-preview', options: MODELS, span2: true })}
         </div>
         <button type="button" class="btn btn-soft btn-block" data-test style="margin-top:12px">${icon('activity', 17)} Testar conexão</button>
         <div data-test-status style="margin-top:10px"></div>
@@ -137,7 +137,7 @@ export default async function settingsScreen(view) {
     },
     gemini: {
       key: str(form, 'geminiKey'),
-      model: str(form, 'geminiModel') || 'gemini-2.5-flash',
+      model: str(form, 'geminiModel') || 'gemini-3-flash-preview',
     },
   });
 
