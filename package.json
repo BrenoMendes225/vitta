@@ -1,0 +1,10 @@
+{
+  "name": "vitta",
+  "private": true,
+  "type": "module",
+  "description": "PWA pessoal de acompanhamento de peso, medidas, alimentação e aplicações.",
+  "scripts": {
+    "dev": "python3 -m http.server 8080",
+    "check": "node --check js/*.js js/screens/*.js sw.js"
+  }
+}
