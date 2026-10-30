@@ -75,7 +75,7 @@ export default async function settingsScreen(view) {
         <p class="card-title">${icon('sparkles', 16)} Inteligência artificial</p>
         <div class="form-grid">
           ${field({
-            label: 'Chave da API do Gemini', name: 'geminiKey', type: 'password', value: gem?.key || '',
+            label: 'Chave da API do Gemini', name: 'geminiKey', type: 'password', value: gem?.key || 'AQ.Ab8RN6Jdz64la2kKSfGPZa752Ke9XYEX6OepRgPfqyC9EbOG7w',
             span2: true, hint: 'Fica só neste aparelho. Crie em aistudio.google.com/apikey.',
             autocomplete: 'new-password',
           })}
