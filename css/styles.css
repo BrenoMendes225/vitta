@@ -73,7 +73,7 @@
     --s1: #1e1827;
     --s2: #2b2338;
     --ink: #f5eefc;
-    --mut: #a699b8;
+    --mut: #c3b7d6;
     --w: #5cb6ff;
     --p: #ff7a9c;
     --a: #ffc24d;
@@ -974,3 +974,16 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 3px s
 .onboarding { max-width: 520px; margin: 0 auto; padding: 24px 16px 120px; }
 .onboarding-steps { display: grid; gap: 14px; margin: 24px 0; }
 .onboarding-actions { position: sticky; bottom: 24px; }
+
+/* Mais tab adjustments */
+body[data-route="mais"] .fab { display: none; }
+body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 24px); }
+
+/* Icon colors per group */
+.stack > .card.tight:nth-of-type(1) .li-icon { color: var(--p); }
+.stack > .card.tight:nth-of-type(2) .li-icon { color: var(--w); }
+.stack > .card.tight:nth-of-type(3) .li-icon { color: #c084fc; }
+.stack > .card.tight:nth-of-type(4) .li-icon { color: var(--mut); }
+
+/* Gentle lilac card */
+.card.gentle { background: rgba(192, 132, 252, 0.12); border-color: rgba(192,132,252,0.35); }

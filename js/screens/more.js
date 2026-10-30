@@ -1,29 +1,91 @@
-/* Tela Mais — perfil, corpo, treino, dados e ajustes. */
-
+/* Tela Mais — perfil, registros, progresso e ajustes. */
 import { state, APP, goals } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, fmtKg, esc } from '../ui.js';
+import { fmtNum, fmtKg, esc, openSheet, confirmSheet, toast } from '../ui.js';
 import * as db from '../db.js';
-import { ageFrom, cap } from '../date.js';
-import { weightSummary } from '../stats.js';
+import { ageFrom, cap, todayISO, startOfWeek, addDays } from '../date.js';
+import { weightSummary, streak } from '../stats.js';
 import { go } from '../router.js';
 
+const PHRASES = [
+  'Constância, não perfeição',
+  'Pequenos passos, grandes mudanças',
+  'Cuidado diário vence pressa',
+  'Hoje é um bom dia para começar',
+  'Seu corpo agradece a escuta',
+  'Progresso é soma de escolhas',
+  'Gentileza consigo é cuidado',
+  'Foco no processo, não no resultado',
+  'Cada dia é um novo começo',
+  'Acolha o ritmo do seu corpo',
+];
+
+function dayPhrase() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now - start;
+  const dayOfYear = Math.floor(diff / 86400000);
+  return PHRASES[dayOfYear % PHRASES.length];
+}
+
 export default async function moreScreen(view) {
-  const [weights, meals, measurements, symptoms, workouts] = await Promise.all([
+  const [weights, mealsAll, measurementsAll, workoutsAll, symptomsAll, injectionsAll] = await Promise.all([
     db.all('weights'),
-    db.count('meals'),
-    db.count('measurements'),
-    db.count('symptoms'),
-    db.count('workouts'),
+    db.all('meals'),
+    db.all('measurements'),
+    db.all('workouts'),
+    db.all('symptoms'),
+    db.all('injections'),
   ]);
-  const summary = weightSummary(weights, state.settings);
-  const g = goals();
+
+  const weekStart = startOfWeek(todayISO());
+  const weekEnd = todayISO();
+
+  const [mealsWeek, measurementsWeek, workoutsWeek] = await Promise.all([
+    db.inRange('meals', weekStart, weekEnd),
+    db.inRange('measurements', weekStart, weekEnd),
+    db.inRange('workouts', weekStart, weekEnd),
+  ]);
+
+  // Profile & weight
+  const sortedWeights = [...weights].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const firstW = sortedWeights.find(w => Number.isFinite(Number(w.kg)));
+  const latestW = sortedWeights[sortedWeights.length - 1];
+  const goalWeight = Number(state.settings.goalWeight) || null;
+
+  let progressText = '';
+  let progressValue = null;
+  if (latestW && firstW && goalWeight && firstW.kg !== goalWeight) {
+    const firstKg = Number(firstW.kg);
+    const lastKg = Number(latestW.kg);
+    const prog = (firstKg - lastKg) / (firstKg - goalWeight);
+    progressValue = Math.max(0, Math.min(1, prog));
+    const remaining = lastKg - goalWeight;
+    progressText = `Início ${fmtKg(firstKg)} kg → Agora ${fmtKg(lastKg)} kg → Meta ${fmtKg(goalWeight)} kg · faltam ${fmtKg(remaining)} kg`;
+  } else if (weights.length > 0) {
+    const lastKg = Number(latestW?.kg);
+    progressText = `Agora ${fmtKg(lastKg)} kg${goalWeight ? ` · meta ${fmtKg(goalWeight)} kg` : ''}`;
+  } else {
+    progressText = 'Comece registrando seu peso';
+  }
+
+  // Streak
+  const datesSet = new Set();
+  const addDates = arr => arr.forEach(r => r.date && datesSet.add(r.date));
+  addDates(weights);
+  addDates(mealsAll);
+  addDates(workoutsAll);
+  addDates(symptomsAll);
+  addDates(injectionsAll);
+  const streakDays = streak(Array.from(datesSet), todayISO());
+  const streakLabel = streakDays > 0 ? `🔥 ${streakDays} dias seguidos` : 'Comece sua sequência';
+
   const name = state.settings.name || 'Você';
   const age = ageFrom(state.settings.birthDate);
 
-  const item = (path, iconName, title, sub, end = '') => `
+  const item = (path, iconName, title, sub, end = '', colorClass = '') => `
     <button class="list-item press" data-go="${path}">
-      <span class="li-icon">${icon(iconName, 17)}</span>
+      <span class="li-icon ${colorClass}">${icon(iconName, 17)}</span>
       <div class="li-main">
         <div class="li-title">${esc(title)}</div>
         ${sub ? `<div class="li-sub">${esc(sub)}</div>` : ''}
@@ -31,10 +93,20 @@ export default async function moreScreen(view) {
       <span class="li-end">${end}${icon('right', 15)}</span>
     </button>`;
 
+  const metrics = [
+    ['Refeições', mealsWeek.length, mealsWeek.length ? '' : 'Vamos começar a semana?'],
+    ['Medidas', measurementsWeek.length, measurementsWeek.length ? '' : 'Registre uma medida hoje'],
+    ['Treinos', workoutsWeek.length, workoutsWeek.length ? '' : 'Movimente-se com carinho'],
+  ];
+
+  const measurementsCount = measurementsAll.length;
+  const symptomsCount = symptomsAll.length;
+  const workoutsCount = workoutsAll.length;
+
   view.innerHTML = `
     <header class="page-head">
       <div>
-        <p class="eyebrow">${cap(APP.tagline)}</p>
+        <p class="eyebrow">${cap(dayPhrase())}</p>
         <h1>Mais</h1>
       </div>
     </header>
@@ -54,33 +126,31 @@ export default async function moreScreen(view) {
           <button class="icon-btn bare" data-go="ajustes" aria-label="Editar perfil">${icon('edit', 18)}</button>
         </div>
 
-        ${summary.latest ? `
-          <div style="margin-top:14px">
-            <div class="row">
-              <span class="small strong">${fmtKg(summary.latest.value)} kg${summary.goalWeight ? ` <span class="muted" style="font-weight:500">de ${fmtKg(summary.goalWeight)} kg</span>` : ''}</span>
-              <span class="small muted">${summary.progress != null ? `${fmtNum(summary.progress * 100, 0)}%` : ''}</span>
-            </div>
-            ${summary.progress != null ? `<div class="bar"><i style="width:${(summary.progress * 100).toFixed(1)}%"></i></div>` : ''}
-          </div>` : ''}
+        <div style="margin-top:14px">
+          <div class="row">
+            <span class="small strong">${progressText}</span>
+            <span class="small muted">${streakLabel}</span>
+          </div>
+          ${progressValue != null ? `<div class="bar"><i style="width:${(progressValue * 100).toFixed(1)}%"></i></div>` : `<div class="small muted" style="margin-top:6px">${progressText}</div>`}
+        </div>
 
         <div class="grid-3" style="margin-top:14px">
-          ${[
-            ['Refeições', meals],
-            ['Medidas', measurements],
-            ['Treinos', workouts],
-          ].map(([l, v]) => `<div class="center">
-            <p class="metric" style="font-size:18px;margin:0">${v}</p>
-            <p class="tiny muted" style="margin:0">${l}</p>
-          </div>`).join('')}
+          ${metrics.map(([l, v, hint]) => `
+            <div class="center">
+              <p class="metric" style="font-size:18px;margin:0">${v > 0 ? v : ''}</p>
+              <p class="tiny muted" style="margin:0">${l}</p>
+              ${v === 0 && hint ? `<p class="tiny muted" style="margin:2px 0 0;opacity:0.8">${esc(hint)}</p>` : ''}
+            </div>
+          `).join('')}
         </div>
       </section>
 
       <section class="card tight">
-        <p class="card-label" style="padding:2px 2px 6px">Corpo</p>
+        <p class="card-label" style="padding:2px 2px 6px">Registros</p>
         <div class="list">
-          ${item('medidas', 'ruler', 'Medidas', measurements ? `${measurements} registro${measurements > 1 ? 's' : ''}` : 'cintura, quadril, braço, coxa')}
-          ${item('sintomas', 'activity', 'Sintomas', symptoms ? `${symptoms} dia${symptoms > 1 ? 's' : ''} registrado${symptoms > 1 ? 's' : ''}` : 'náusea, cansaço, apetite')}
-          ${item('treino', 'dumbbell', 'Treino', workouts ? `${workouts} treino${workouts > 1 ? 's' : ''}` : 'registre presença e carga')}
+          ${item('medidas', 'ruler', 'Medidas', measurementsCount ? `${measurementsCount} registro${measurementsCount > 1 ? 's' : ''}` : 'cintura, quadril, braço, coxa')}
+          ${item('sintomas', 'activity', 'Sintomas', symptomsCount ? `${symptomsCount} dia${symptomsCount > 1 ? 's' : ''} registrado${symptomsCount > 1 ? 's' : ''}` : 'náusea, cansaço, apetite')}
+          ${item('treino', 'dumbbell', 'Treino', workoutsCount ? `${workoutsCount} treino${workoutsCount > 1 ? 's' : ''}` : 'registre presença e carga')}
         </div>
       </section>
 
@@ -92,10 +162,11 @@ export default async function moreScreen(view) {
         </div>
       </section>
 
-      <section class="card tight">
-        <p class="card-label" style="padding:2px 2px 6px">Gentileza</p>
-        <div class="list">
-          ${item('dias-dificeis', 'moon', 'Dias difíceis', 'marque sem culpa, a sequência não quebra')}
+      <section class="card gentle" style="padding:18px">
+        <p class="card-label" style="padding:0 0 6px">Gentileza</p>
+        <div style="font-size:14px;line-height:1.55;color:var(--ink)">
+          <div style="font-weight:700;margin-bottom:6px">Cuidado constante vale mais que perfeição</div>
+          <div class="small muted">Se foi um dia difícil, tudo bem. Continue com gentileza consigo. A sequência não se quebra por autocuidado.</div>
         </div>
       </section>
 
@@ -103,14 +174,78 @@ export default async function moreScreen(view) {
         <p class="card-label" style="padding:2px 2px 6px">App</p>
         <div class="list">
           ${item('ajustes', 'sliders', 'Ajustes', 'metas, medicamento e IA')}
-          ${item('sobre', 'info', 'Sobre o Vitta', `versão ${APP.version} · dados no seu aparelho`)}
+          ${item('backup', 'download', 'Backup', 'exportar e importar seus dados')}
+          ${item('ajustes', 'bell', 'Lembretes', 'em breve')}
+          ${item('ajustes', 'lock', 'Bloqueio por PIN', 'em breve')}
+          ${item('ajustes', 'palette', 'Tema e unidades', 'em breve')}
         </div>
       </section>
 
-      <p class="disclaimer center">${APP.name} · ${APP.tagline}</p>
+      <p class="disclaimer center">Vitta v0.1.0 · dados no seu aparelho</p>
     </div>`;
 
   view.querySelectorAll('[data-go]').forEach((el) => {
-    el.addEventListener('click', () => go(el.dataset.go));
+    const path = el.dataset.go;
+    if (path === 'backup') {
+      el.addEventListener('click', () => openBackupSheet());
+    } else {
+      el.addEventListener('click', () => go(path));
+    }
+  });
+}
+
+/* Backup sheet */
+async function openBackupSheet() {
+  openSheet({
+    title: 'Backup',
+    hideSubmit: true,
+    hideCancel: true,
+    body: `
+      <p class="small muted" style="margin:0 0 12px">Exporte seus dados para um arquivo JSON e importe quando quiser. Fotos não são incluídas.</p>
+      <button class="btn btn-primary btn-block" id="btn-export">Exportar JSON</button>
+      <div class="field span-2" style="margin-top:12px">
+        <label>Importar JSON</label>
+        <input type="file" id="import-file" accept="application/json">
+        <span class="hint">A importação acrescenta registros aos existentes.</span>
+      </div>
+    `,
+    onMount: (form) => {
+      form.querySelector('#btn-export')?.addEventListener('click', async () => {
+        try {
+          const data = await db.exportAll();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `vitta-backup-${new Date().toISOString().slice(0,10)}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast('Backup exportado');
+        } catch (e) {
+          toast('Não foi possível exportar');
+          console.error(e);
+        }
+      });
+
+      form.querySelector('#import-file')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          const ok = await confirmSheet({
+            title: 'Importar backup',
+            message: 'Deseja importar os dados? Os registros serão adicionados aos atuais.',
+            confirmLabel: 'Importar',
+          });
+          if (!ok) return;
+          const total = await db.importAll(data, { replace: false });
+          toast(`Importados ${total} registros`);
+        } catch (err) {
+          toast('Arquivo inválido');
+          console.error(err);
+        }
+      });
+    }
   });
 }

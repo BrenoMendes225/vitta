@@ -97,6 +97,7 @@ export async function render({ keepScroll = false } = {}) {
     if (token === renderToken) renderError(view, err);
   }
   setActiveTab();
+  document.body.dataset.route = currentPath;
 }
 
 export function refresh(options = {}) {
