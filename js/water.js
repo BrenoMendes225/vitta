@@ -1,6 +1,6 @@
 /* Água do dia — guardada em kv como `water:YYYY-MM-DD`. */
 
-import { getKV, setKV } from './db.js';
+import { getKV, setKV } from './supabase-db.js';
 import { todayISO } from './date.js';
 
 export const waterKey = (date) => `water:${date}`;

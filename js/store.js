@@ -1,6 +1,6 @@
 /* Estado global: configurações + barramento simples de eventos. */
 
-import { getKV, setKV } from './db.js';
+import { getKV, setKV } from './supabase-db.js';
 
 export const APP = {
   name: 'Vitta',
