@@ -2,7 +2,7 @@
 import { state, APP, goals } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, fmtKg, esc, openSheet, confirmSheet, toast } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { ageFrom, cap, todayISO, startOfWeek, addDays } from '../date.js';
 import { weightSummary, streak } from '../stats.js';
 import { go } from '../router.js';

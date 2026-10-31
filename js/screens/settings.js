@@ -3,7 +3,7 @@
 import { state, saveSettings, loadSettings, loadSettings as reload, APP } from '../store.js';
 import { icon } from '../icons.js';
 import { field, selectField, str, num, toast, esc, confirmSheet, openSheet } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO } from '../date.js';
 import { testKey } from '../gemini.js';
 import { refresh, back, go } from '../router.js';

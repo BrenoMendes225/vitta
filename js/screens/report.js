@@ -3,7 +3,7 @@
 import { state, APP } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, fmtKg, signed, esc, fmtL } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, addDays, fmtShort, fmtLong, rangeDays, humanDate, fmtMonthYear } from '../date.js';
 import { dailyWeights, mealTotals, sortAsc } from '../stats.js';
 import { getWater } from '../water.js';

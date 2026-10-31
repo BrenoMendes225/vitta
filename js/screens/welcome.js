@@ -3,7 +3,7 @@
 import { saveSettings, APP } from '../store.js';
 import { icon } from '../icons.js';
 import { field, str, num, toast } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO } from '../date.js';
 import { go } from '../router.js';
 

@@ -2,7 +2,7 @@
 
 import { icon } from '../icons.js';
 import { fmtNum, esc, emptyState } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, humanDate } from '../date.js';
 import { symptomSheet } from '../forms.js';
 import { refresh, back } from '../router.js';

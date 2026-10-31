@@ -5,7 +5,7 @@ import {
   photoInput, wirePhotoPreview, esc, fmtNum,
 } from './ui.js';
 import { icon } from './icons.js';
-import * as db from './db.js';
+import * as db from './supabase-db.js';
 import { state } from './store.js';
 import { todayISO, nowHM } from './date.js';
 import { compressImage, thumbnail } from './image.js';

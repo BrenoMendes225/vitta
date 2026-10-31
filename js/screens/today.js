@@ -3,7 +3,7 @@
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, fmtKg, fmtVol, esc, toast } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, humanDate, greeting, fmtShort, relativeDays, cap } from '../date.js';
 import { weightSummary, mealTotals } from '../stats.js';
 import { ringChart, sparkline } from '../charts.js';

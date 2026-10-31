@@ -2,7 +2,7 @@
 
 import { icon } from '../icons.js';
 import { fmtNum, signed, field, esc, emptyState, openSheet, confirmSheet, toast, str, num } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, humanDate, fmtMonthYear } from '../date.js';
 import { sortAsc } from '../stats.js';
 import { refresh, back } from '../router.js';

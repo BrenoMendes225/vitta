@@ -2,7 +2,7 @@
 
 import { icon } from '../icons.js';
 import { field, selectField, str, num, esc, emptyState, openSheet, confirmSheet, toast } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, humanDate, addDays, startOfWeek, diffDays } from '../date.js';
 import { streak } from '../stats.js';
 import { refresh, back } from '../router.js';

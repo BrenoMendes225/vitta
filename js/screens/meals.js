@@ -3,7 +3,7 @@
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, fmtKcal, progressBar, esc, emptyState, openSheet, confirmSheet, toast } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, addDays, humanDate, fmtShort } from '../date.js';
 import { mealTotals } from '../stats.js';
 import { mealSheet } from '../forms.js';

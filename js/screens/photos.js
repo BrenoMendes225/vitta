@@ -2,7 +2,7 @@
 
 import { icon } from '../icons.js';
 import { fmtNum, esc, emptyState, openSheet, toast, confirmSheet, selectField } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { fmtShort, humanDate, fmtLong } from '../date.js';
 import { compareSlider, wireCompareSlider } from '../charts.js';
 import { refresh, back } from '../router.js';

@@ -3,7 +3,7 @@
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, fmtKg, signed, esc, emptyState, openSheet } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, addDays, humanDate, fmtMonthYear, diffDays } from '../date.js';
 import { weightSummary, movingAverage, sortAsc } from '../stats.js';
 import { weightChart } from '../charts.js';

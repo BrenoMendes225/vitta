@@ -3,7 +3,7 @@
 import { state } from '../store.js';
 import { icon } from '../icons.js';
 import { fmtNum, esc, emptyState } from '../ui.js';
-import * as db from '../db.js';
+import * as db from '../supabase-db.js';
 import { todayISO, humanDate, fmtLong, weekday, relativeDays, fmtMonthYear, cap, addDays } from '../date.js';
 import { nextInjection, siteUsage, sortInjections, doseLabel } from '../schedule.js';
 import { injectionSheet } from '../forms.js';
