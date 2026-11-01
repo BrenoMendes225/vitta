@@ -136,8 +136,6 @@ export default async function moreScreen(view) {
           ${metrics.map(([l, v, hint]) => `
             <div class="center">
               <p class="metric" style="font-size:18px;margin:0">${v > 0 ? v : ''}</p>
-              <p class="tiny muted" style="margin:0">${l}</p>
-              ${v === 0 && hint ? `<p class="tiny muted" style="margin:2px 0 0;opacity:0.8">${esc(hint)}</p>` : ''}
             </div>
           `).join('')}
         </div>
