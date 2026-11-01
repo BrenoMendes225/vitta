@@ -72,7 +72,13 @@ async function boot() {
   await loadSettings();
   applyTheme();
   buildTabbar();
-  on('settings', applyTheme);
+  on('settings', async (s) => {
+    applyTheme();
+    const { startReminders } = await import('./reminders.js');
+    if (s.remindersEnabled) startReminders();
+  });
+  const { initReminders } = await import('./reminders.js');
+  initReminders();
 
   const onboarded = localStorage.getItem('vitta_onboarded');
   const current = parsePath();
