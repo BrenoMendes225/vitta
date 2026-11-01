@@ -84,7 +84,8 @@ async function boot() {
   const current = parsePath();
   const { supabase } = await import('./supabase.js');
   const { data: { session } } = await supabase.auth.getSession();
-  const isLogged = !!session?.user || localStorage.getItem('vitta_user') === 'guest';
+  const isLogged = !!session?.user;
+  localStorage.removeItem('vitta_user');
 
   if (!onboarded && !['onboarding','login','bemvindo'].includes(current)) {
     location.replace('#/onboarding');
@@ -96,7 +97,7 @@ async function boot() {
     return;
   }
 
-  if (!state.settings.onboarded && parsePath() !== 'bemvindo') {
+  if (!state.settings.onboarded && isLogged && parsePath() !== 'bemvindo') {
     location.replace('#/bemvindo');
   }
 

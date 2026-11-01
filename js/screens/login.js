@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js';
 import { go, refresh } from '../router.js';
 import { field, toast } from '../ui.js';
 import { icon } from '../icons.js';
+import { state } from '../store.js';
 
 export default async function loginScreen(view) {
   let mode = localStorage.getItem('vitta_login_mode') || 'login';
@@ -53,7 +54,7 @@ export default async function loginScreen(view) {
           if (error) throw error;
         }
         toast('Sucesso! Redirecionando...');
-        setTimeout(() => go('hoje'), 600);
+        setTimeout(() => go(!state.settings.onboarded ? 'bemvindo' : 'hoje'), 600);
       } catch (err) {
         toast(err.message || 'Erro ao autenticar');
       }
