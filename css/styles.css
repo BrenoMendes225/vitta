@@ -989,6 +989,7 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 3px s
 
 /* Mais tab adjustments */
 body[data-route="mais"] .fab { display: none; }
+body[data-route="bemvindo"] .fab { display: none; }
 body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 24px); }
 
 /* Icon colors per group */
