@@ -77,7 +77,6 @@ export default async function mealsScreen(view) {
         <p class="eyebrow">Alimentação</p>
         <h1>Diário</h1>
       </div>
-      <button class="icon-btn" data-add aria-label="Nova refeição">${icon('plus', 20)}</button>
     </header>
 
     <div class="days">${daysHtml.join('')}</div>
