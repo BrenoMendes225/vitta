@@ -68,40 +68,77 @@ function applyTheme() {
 }
 
 async function boot() {
+  const t0 = performance.now();
   document.documentElement.style.setProperty('--app-name', `"${APP.name}"`);
-  const view = document.getElementById('view');
-  view.innerHTML = `<div class="card" style="margin-top:40px;text-align:center"><p class="small muted">Carregando...</p></div>`;
-  const { supabase } = await import('./supabase.js');
-  const { data: { session } } = await supabase.auth.getSession();
-  const isLogged = !!session?.user;
-  localStorage.removeItem('vitta_user');
-
-  await loadSettings();
-  applyTheme();
+  // UI imediata sem dados
   buildTabbar();
-  on('settings', async (s) => {
-    applyTheme();
-    const { startReminders } = await import('./reminders.js');
-    if (s.remindersEnabled) startReminders();
-  });
-  const { initReminders } = await import('./reminders.js');
-  initReminders();
-
-  const current = parsePath();
-
-  if (!isLogged && !['onboarding','login'].includes(current)) {
-    location.replace('#/login');
-    return;
-  }
-
-  if (!state.settings.onboarded && isLogged && !['bemvindo','onboarding','login'].includes(current)) {
-    location.replace('#/bemvindo');
-    return;
-  }
-
   document.querySelector('.fab')?.addEventListener('click', openQuickMenu);
 
+  // pré-carrega reminders em background
+  const remindersPromise = import('./reminders.js');
+
+  const view = document.getElementById('view');
+  view.innerHTML = `<div class="card" style="margin-top:40px;text-align:center"><p class="small muted">Carregando...</p></div>`;
+
+  let isLogged = false;
+  let loadOk = true;
+  try {
+    const { supabase } = await import('./supabase.js');
+    const { data: { session } } = await supabase.auth.getSession();
+    isLogged = !!session?.user;
+    localStorage.removeItem('vitta_user');
+    await loadSettings();
+    applyTheme();
+  } catch (e) {
+    loadOk = false;
+    console.warn('Boot load failed', e);
+    // mantém UI básica, não bloqueia
+  }
+
+  // router sempre inicia; redirecionamentos não bloqueiam
+  const current = parsePath();
+  if (loadOk) {
+    if (!isLogged && !['onboarding','login'].includes(current)) {
+      location.replace('#/login');
+    } else if (!state.settings.onboarded && isLogged && !['bemvindo','onboarding','login'].includes(current)) {
+      // só redireciona se perfil carregou e indica não concluído
+      location.replace('#/bemvindo');
+    }
+  } else {
+    // rede falhou: não redireciona para bemvindo, mostra aviso suave
+    view.innerHTML = `<div class="card" style="margin-top:40px;text-align:center">
+      <p class="small muted">Modo offline — alguns dados podem estar desatualizados.</p>
+    </div>`;
+  }
+
   startRouter();
+
+  // lembretes após primeiro paint, sem bloquear
+  const scheduleReminders = async () => {
+    const { initReminders, startReminders } = await remindersPromise;
+    // evita recriar se settings não mudou
+    on('settings', async (s) => {
+      applyTheme();
+      // idempotente: startReminders limpa timers antigos
+      if (s.remindersEnabled) {
+        await startReminders();
+      }
+    });
+    if (state.settings?.remindersEnabled) {
+      await initReminders();
+    }
+  };
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(scheduleReminders);
+  } else {
+    setTimeout(scheduleReminders, 300);
+  }
+
+  // métrica de primeira tela
+  requestAnimationFrame(() => {
+    const t1 = performance.now();
+    console.log('[Vitta boot] first paint', Math.round(t1 - t0), 'ms');
+  });
 }
 
 boot().catch((err) => {
@@ -117,6 +154,7 @@ boot().catch((err) => {
 /* Service worker: deixa o app disponível offline (precisa de https/localhost). */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
   let reloading = false;
+  const hadController = !!navigator.serviceWorker.controller;
 
   window.addEventListener('load', async () => {
     try {
@@ -131,6 +169,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   // (evita misturar db.js antigo com módulos novos — caso do IndexedDB)
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (reloading) return;
+    if (!hadController) return; // primeira instalação, não recarrega
     reloading = true;
     const reload = () => location.reload();
     if (document.body.classList.contains('so')) {

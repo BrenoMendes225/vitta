@@ -1,6 +1,12 @@
 /* Reminders: notificações suaves via Notification API */
 import { state } from './store.js';
 
+const timers = [];
+const clearReminders = () => {
+  timers.forEach(id => clearTimeout(id));
+  timers.length = 0;
+};
+
 const getNext = (hour, minute = 0) => {
   const now = new Date();
   const next = new Date(now);
@@ -27,12 +33,14 @@ export function notify(title, body) {
 export function scheduleOnce(date, title, body) {
   const ms = date.getTime() - Date.now();
   if (ms <= 0) return;
-  setTimeout(() => {
+  const id = setTimeout(() => {
     notify(title, body);
   }, ms);
+  timers.push(id);
 }
 
 export async function startReminders() {
+  clearReminders();
   const st = state.settings;
   if (!st?.remindersEnabled) return;
   const granted = await requestPermission();
