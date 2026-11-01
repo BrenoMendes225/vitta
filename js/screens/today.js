@@ -17,9 +17,9 @@ export default async function todayScreen(view) {
   const today = todayISO();
   const days = Array.from({length:7}, (_,i)=> addDays(today, -6+i));
   const [weights, mealsAll, injections, waterToday, symptoms] = await Promise.all([
-    db.all('weights'),
-    db.all('meals'),
-    db.all('injections'),
+    db.inRange('weights', addDays(today, -90), today),
+    db.inRange('meals', addDays(today, -7), today),
+    db.inRange('injections', addDays(today, -90), today),
     getWater(today),
     db.byDate('symptoms', today),
   ]);
