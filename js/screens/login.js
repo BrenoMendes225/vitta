@@ -28,7 +28,6 @@ export default async function loginScreen(view) {
               : `<button class="link" data-switch>Já tem conta? Entrar</button>`}
           </div>
 
-          <button class="btn btn-soft btn-block" data-continue>Continuar sem login</button>
         </div>
       </div>
     `;
@@ -37,11 +36,6 @@ export default async function loginScreen(view) {
       mode = mode === 'login' ? 'signup' : 'login';
       localStorage.setItem('vitta_login_mode', mode);
       render();
-    });
-
-    view.querySelector('[data-continue]').addEventListener('click', () => {
-      localStorage.setItem('vitta_user', 'guest');
-      go('hoje');
     });
 
     view.querySelector('#auth-form').addEventListener('submit', async (e) => {
