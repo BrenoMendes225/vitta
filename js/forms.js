@@ -246,6 +246,7 @@ export function waterSheet({ date = todayISO(), current = 0, onDone } = {}) {
           localStorage.setItem('vitta_water_last', String(ml));
           await renderHistory(hist);
           updateProgress();
+          onDone?.();
           const undo = document.getElementById('water-undo');
           undo.innerHTML = `Adicionado +${ml} ml · <button type="button" class="link" data-undo>Desfazer</button>`;
           undo.style.display = 'block';
@@ -257,6 +258,7 @@ export function waterSheet({ date = todayISO(), current = 0, onDone } = {}) {
             await renderHistory(hist);
             updateProgress();
             undo.style.display='none';
+            onDone?.();
           };
         });
       });
@@ -401,6 +403,7 @@ export function proteinSheet({ date = todayISO(), current = 0, onDone } = {}) {
           localStorage.setItem('vitta_protein_last', String(g));
           await renderHistory(hist);
           updateProgress();
+          onDone?.();
           const undo = document.getElementById('protein-undo');
           undo.innerHTML = `Adicionado +${g} g · <button type="button" class="link" data-undo>Desfazer</button>`;
           undo.style.display = 'block';
@@ -412,6 +415,7 @@ export function proteinSheet({ date = todayISO(), current = 0, onDone } = {}) {
             await renderHistory(hist);
             updateProgress();
             undo.style.display='none';
+            onDone?.();
           };
         });
       });

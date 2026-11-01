@@ -35,6 +35,15 @@ const TAB_OF = {
 
 let currentPath = 'hoje';
 let renderToken = 0;
+const moduleCache = {};
+
+async function loadModule(path) {
+  if (moduleCache[path]) return moduleCache[path];
+  const loader = SCREENS[path] || SCREENS.hoje;
+  const mod = await loader();
+  moduleCache[path] = mod;
+  return mod;
+}
 
 export function parsePath() {
   const raw = location.hash.replace(/^#\/?/, '').split('?')[0];
@@ -82,15 +91,16 @@ export async function render({ keepScroll = false } = {}) {
   const token = ++renderToken;
   const scrollY = window.scrollY;
 
-  const loader = SCREENS[path] || SCREENS.hoje;
   currentPath = SCREENS[path] ? path : 'hoje';
 
   try {
-    const mod = await loader();
+    const mod = await loadModule(path);
     if (token !== renderToken) return;
-    view.innerHTML = '';
+    // keep previous DOM while loading to avoid flicker
+    view.style.opacity = '0.6';
     await mod.default(view, { path, params: path.split('/').slice(1) });
     if (token !== renderToken) return;
+    view.style.opacity = '1';
     if (keepScroll) window.scrollTo(0, scrollY);
     else window.scrollTo(0, 0);
   } catch (err) {
