@@ -1,6 +1,6 @@
 /* Boas-vindas / primeira configuração. */
 
-import { saveSettings, APP } from '../store.js';
+import { saveSettings, APP, state } from '../store.js';
 import { icon } from '../icons.js';
 import { field, str, num, toast } from '../ui.js';
 import * as db from '../supabase-db.js';
@@ -55,13 +55,31 @@ export default async function welcomeScreen(view) {
         Seus dados ficam neste aparelho. Nada é enviado para servidores nossos.<br>
         ${APP.name} não substitui médico ou nutricionista.
       </p>
+      <button type="button" class="link center" data-skip style="margin-top:12px">Pular por enquanto</button>
     </form>`;
 
   const form = view.querySelector('#welcome-form');
 
+  const markOnboardingDone = async (nameOverride, heightOverride) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const name = nameOverride ?? state.settings.name ?? '';
+    const height = heightOverride ?? state.settings.height ?? null;
+    const birth_date = state.settings.birthDate || null;
+    await supabase.from('profiles').upsert({
+      id: user.id,
+      name: name || null,
+      height: height ?? null,
+      birth_date,
+      onboarding_concluido: true,
+      onboarding_concluido_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+  };
+
   const finish = async ({ skip = false } = {}) => {
     if (skip) {
       await saveSettings({ onboarded: true });
+      await markOnboardingDone();
       go('hoje');
       return;
     }
@@ -80,6 +98,7 @@ export default async function welcomeScreen(view) {
       },
       gemini: { key: str(form, 'geminiKey') },
     });
+    await markOnboardingDone(str(form, 'name') || state.settings.name, num(form, 'height') || state.settings.height);
 
     if (startWeight) {
       const existing = (await db.byDate('weights', todayISO()))[0];
@@ -99,5 +118,11 @@ export default async function welcomeScreen(view) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     await finish();
+  });
+
+  view.querySelector('[data-skip]')?.addEventListener('click', async () => {
+    if (confirm('Pular o cadastro inicial? Você pode completar depois em Ajustes.')) {
+      await finish({ skip: true });
+    }
   });
 }

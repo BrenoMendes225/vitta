@@ -3,7 +3,7 @@ import { supabase } from '../supabase.js';
 import { go, refresh } from '../router.js';
 import { field, toast } from '../ui.js';
 import { icon } from '../icons.js';
-import { state } from '../store.js';
+import { state, loadSettings } from '../store.js';
 
 export default async function loginScreen(view) {
   // esconde FAB e tabbar nesta tela
@@ -126,7 +126,11 @@ export default async function loginScreen(view) {
             toast('Dados migrados com sucesso');
           }
         }
-        setTimeout(() => go(!state.settings.onboarded ? 'bemvindo' : 'hoje'), 600);
+        // recarrega settings e perfil antes de decidir rota
+        await loadSettings();
+        // pequeno delay visual para evitar piscar
+        await new Promise(r => setTimeout(r, 300));
+        go(!state.settings.onboarded ? 'bemvindo' : 'hoje');
       } catch (err) {
         toast(err.message || 'Erro ao autenticar');
       }

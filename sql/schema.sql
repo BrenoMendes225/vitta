@@ -7,6 +7,8 @@ create table if not exists public.profiles (
   name text,
   birth_date date,
   height numeric,
+  onboarding_concluido boolean default false,
+  onboarding_concluido_at timestamptz,
   created_at timestamptz default now()
 );
 

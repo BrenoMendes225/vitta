@@ -69,6 +69,8 @@ function applyTheme() {
 
 async function boot() {
   document.documentElement.style.setProperty('--app-name', `"${APP.name}"`);
+  const view = document.getElementById('view');
+  view.innerHTML = `<div class="card" style="margin-top:40px;text-align:center"><p class="small muted">Carregando...</p></div>`;
   const { supabase } = await import('./supabase.js');
   const { data: { session } } = await supabase.auth.getSession();
   const isLogged = !!session?.user;

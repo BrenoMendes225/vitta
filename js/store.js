@@ -70,6 +70,38 @@ function merge(base, patch) {
 export async function loadSettings() {
   const saved = await getKV('settings');
   state.settings = merge(structuredClone(DEFAULT_SETTINGS), saved || {});
+  // carrega perfil para decidir onboarding
+  try {
+    const { supabase } = await import('./supabase.js');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      const { data: profile } = await supabase.from('profiles').select('name,birth_date,onboarding_concluido,onboarding_concluido_at,height').eq('id', user.id).maybeSingle();
+      if (profile) {
+        // migra dados do perfil para settings se faltarem
+        const patch = {};
+        if (profile.name && !state.settings.name) patch.name = profile.name;
+        if (profile.birth_date && !state.settings.birthDate) patch.birthDate = profile.birth_date;
+        if (profile.height && !state.settings.height) patch.height = profile.height;
+        if (Object.keys(patch).length) {
+          state.settings = merge(state.settings, patch);
+        }
+        const hasDados = !!(profile.name || state.settings.name || state.settings.startWeight || state.settings.goalWeight || state.settings.height);
+        const onboardingDone = profile.onboarding_concluido === true || hasDados;
+        if (onboardingDone && !profile.onboarding_concluido) {
+          // migra conta antiga com dados para concluída
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            onboarding_concluido: true,
+            onboarding_concluido_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+        }
+        if (onboardingDone) {
+          state.settings.onboarded = true;
+          state.settings._profileOnboarded = true;
+        }
+      }
+    }
+  } catch {}
   state.ready = true;
   return state.settings;
 }
@@ -78,6 +110,25 @@ export async function saveSettings(patch) {
   state.settings = merge(state.settings, patch);
   await setKV('settings', state.settings);
   emit('settings', state.settings);
+  // sincroniza campos de perfil na conta
+  try {
+    const { supabase } = await import('./supabase.js');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      const profilePatch = {};
+      if (state.settings.name !== undefined) profilePatch.name = state.settings.name || null;
+      if (state.settings.birthDate !== undefined) profilePatch.birth_date = state.settings.birthDate || null;
+      if (state.settings.height !== undefined) profilePatch.height = state.settings.height ?? null;
+      // mantém onboarding se já concluído
+      if (state.settings.onboarded) {
+        profilePatch.onboarding_concluido = true;
+        if (!state.settings._profileOnboardedAt) {
+          // não sobrescreve data existente
+        }
+      }
+      await supabase.from('profiles').upsert({ id: user.id, ...profilePatch }, { onConflict: 'id' });
+    }
+  } catch {}
   return state.settings;
 }
 
