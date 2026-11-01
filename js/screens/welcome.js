@@ -6,8 +6,11 @@ import { field, str, num, toast } from '../ui.js';
 import * as db from '../supabase-db.js';
 import { todayISO } from '../date.js';
 import { go } from '../router.js';
+import { supabase } from '../supabase.js';
 
 export default async function welcomeScreen(view) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const prefillName = user?.user_metadata?.name || '';
   view.innerHTML = `
     <div style="padding:26px 4px 18px;text-align:center">
       <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--p);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px var(--p-50)">
@@ -21,7 +24,7 @@ export default async function welcomeScreen(view) {
       <section class="card">
         <p class="card-title">${icon('user', 16)} Sobre você</p>
         <div class="form-grid">
-          ${field({ label: 'Nome', name: 'name', placeholder: 'como quer ser chamado', span2: true })}
+          ${field({ label: 'Nome', name: 'name', placeholder: 'como quer ser chamado', span2: true, value: prefillName })}
           ${field({ label: 'Peso atual (kg)', name: 'startWeight', inputmode: 'decimal', placeholder: '82,4' })}
           ${field({ label: 'Meta (kg)', name: 'goalWeight', inputmode: 'decimal', placeholder: '72' })}
           ${field({ label: 'Altura (cm)', name: 'height', inputmode: 'numeric', placeholder: '175', span2: true })}
