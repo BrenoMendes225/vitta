@@ -17,7 +17,7 @@ export default async function loginScreen(view) {
       <div class="auth-wrap">
         <div class="auth-card card hero">
           <div class="auth-brand">
-            <div class="auth-logo">${icon('activity', 28, 2)}</div>
+            <div class="auth-logo"><img src="icons/vitta-logo.svg" alt="Vitta" style="width:28px;height:28px"></div>
             <h1>Vitta</h1>
           </div>
           <p class="subhead">${isSignup ? 'Crie sua conta para sincronizar seus dados.' : 'Entre ou crie sua conta para sincronizar seus dados com segurança.'}</p>

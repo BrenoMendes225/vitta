@@ -13,8 +13,8 @@ export default async function welcomeScreen(view) {
   const prefillName = user?.user_metadata?.name || '';
   view.innerHTML = `
     <div style="padding:26px 4px 18px;text-align:center">
-      <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--p);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px var(--p-50)">
-        ${icon('activity', 30, 2)}
+      <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--p);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px var(--p-50);overflow:hidden">
+        <img src="icons/vitta-logo.svg" alt="Vitta logo" style="width:40px;height:40px">
       </div>
       <h1 style="margin:0;font-size:29px;letter-spacing:-.03em">${APP.name}</h1>
       <p class="subhead" style="margin-top:6px">Menos planilha, mais constância.<br>Peso, medidas, comida e aplicações num só lugar.</p>
