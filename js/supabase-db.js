@@ -121,14 +121,32 @@ export async function importAll(data) {
   return total;
 }
 
-/* Photos helper – mantém compatibilidade com a tela atual */
+/* Photos helper – upload para Supabase Storage */
 export async function savePhoto(blob, meta = {}) {
-  const { name: t, userId } = await table('photos');
-  if (!userId) return null;
-  // Por simplicidade, não faz upload real. Guarda metadados.
+  const userId = await getUserId();
+  if (!userId || !blob) return null;
+
   const id = crypto.randomUUID();
-  const record = { id, user_id: userId, date: meta.date || new Date().toISOString().slice(0,10), kind: meta.kind || 'weight', url: '', note: '' };
-  const { error } = await supabase.from('photos').insert(record);
-  if (error) throw error;
-  return { id, url: '' };
+  const ext = blob.type.includes('png') ? 'png' : 'jpeg';
+  const path = `${userId}/${id}.${ext}`;
+
+  const { error: upErr } = await supabase.storage
+    .from('vitta-photos')
+    .upload(path, blob, { upsert: false, contentType: blob.type });
+
+  if (upErr) throw upErr;
+
+  const { data } = supabase.storage.from('vitta-photos').getPublicUrl(path);
+  const url = data.publicUrl;
+
+  await supabase.from('photos').insert({
+    id,
+    user_id: userId,
+    date: meta.date || new Date().toISOString().slice(0,10),
+    kind: meta.kind || 'weight',
+    url,
+    note: ''
+  });
+
+  return { id, url };
 }

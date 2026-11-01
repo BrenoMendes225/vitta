@@ -13,14 +13,10 @@ export default async function photosScreen(view) {
   urls.forEach((u) => URL.revokeObjectURL(u));
   urls = [];
 
-  const all = (await db.all('photos')).filter((p) => p.kind === 'weight');
+  const all = (await db.all('photos')).filter((p) => p.kind === 'weight' && p.url);
   const photos = all.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-  const withURL = photos.map((p) => {
-    const url = URL.createObjectURL(p.blob);
-    urls.push(url);
-    return { ...p, url };
-  });
+  const withURL = photos.map((p) => ({ ...p, url: p.url }));
 
   const latest = withURL[0];
   const oldest = withURL[withURL.length - 1];
