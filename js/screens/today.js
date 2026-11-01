@@ -32,8 +32,14 @@ export default async function todayScreen(view) {
   /* anéis: água (externa), proteína (média), aplicação (interna) */
   const waterPct = g.water ? Math.min(1, water / g.water) : 0;
   const proteinPct = g.protein ? Math.min(1, totals.protein / g.protein) : 0;
-  const cycPct = next ? (7 - next.days) / 7 : 0;
-  const overallPct = Math.round(((waterPct + proteinPct) / 2 + cycPct) * 100 / 3);
+  const hasInj = !!(state.settings.injection?.intervalDays && state.settings.injection?.startDate);
+  const cycPct = hasInj && next ? Math.min(1, Math.max(0, (7 - next.days) / 7)) : 0;
+  const metas = [];
+  if (g.water) metas.push(waterPct);
+  if (g.protein) metas.push(proteinPct);
+  if (hasInj) metas.push(cycPct);
+  const overallPct = metas.length ? Math.round((metas.reduce((a,b)=>a+b,0)/metas.length)*100) : 0;
+  const overallLabel = overallPct === 0 && metas.length ? 'Vamos começar' : `${overallPct}%`;
 
   const weightBlock = summary.latest
     ? `
@@ -74,19 +80,59 @@ export default async function todayScreen(view) {
     : `<p class="small muted" style="margin:0 0 12px">Defina o medicamento e o intervalo para o app calcular a próxima aplicação e o rodízio de local.</p>
        <button class="btn btn-soft btn-block" data-go="ajustes">Configurar</button>`;
 
-  const heroCard = `<section class="card hero">
-        <div class="ringw">
-          ${ringChart([
-            { r: 88, pct: waterPct, color: 'var(--w)', label: 'Água' },
-            { r: 68, pct: proteinPct, color: 'var(--p)', label: 'Proteína' },
-            { r: 48, pct: cycPct, color: 'var(--a)', label: 'Aplicação' },
-          ], overallPct)}
-          <div class="ctr"><b>${overallPct}%</b><span>da meta de hoje</span></div>
+  const ringsCard = `
+    <section class="card hero" style="padding:20px">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+        <p class="card-label" style="margin:0">Ritual de hoje</p>
+        <span class="tiny muted">Constância, não perfeição</span>
+      </div>
+      <div class="row" style="align-items:center;gap:24px">
+        <div style="position:relative;width:140px;height:140px">
+          <svg viewBox="0 0 140 140" style="width:100%;height:100%;transform:rotate(-90deg)">
+            <circle cx="70" cy="70" r="60" fill="none" stroke="var(--s2)" stroke-width="12"/>
+            <circle cx="70" cy="70" r="60" fill="none" stroke="var(--w)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="${2*Math.PI*60}" stroke-dashoffset="${2*Math.PI*60*(1-waterPct)}" style="transition:stroke-dashoffset .8s ease"/>
+            <circle cx="70" cy="70" r="44" fill="none" stroke="var(--s2)" stroke-width="12"/>
+            <circle cx="70" cy="70" r="44" fill="none" stroke="var(--p)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="${2*Math.PI*44}" stroke-dashoffset="${2*Math.PI*44*(1-proteinPct)}" style="transition:stroke-dashoffset .8s ease"/>
+            <circle cx="70" cy="70" r="28" fill="none" stroke="var(--s2)" stroke-width="12"/>
+            <circle cx="70" cy="70" r="28" fill="none" stroke="var(--a)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="${2*Math.PI*28}" stroke-dashoffset="${2*Math.PI*28*(1-cycPct)}" style="transition:stroke-dashoffset .8s ease"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center">
+            <div>
+              <div style="font-size:28px;font-weight:700;line-height:1">${overallLabel}</div>
+              <div class="tiny muted">média das metas</div>
+            </div>
+          </div>
         </div>
-        <div class="lg"><i style="background:var(--w)"></i><div><b>Água</b><span>${fmtVol(water)} de ${fmtVol(g.water)} L</span></div></div>
-        <div class="lg"><i style="background:var(--p)"></i><div><b>Proteína</b><span>${fmtNum(totals.protein, 0)} de ${fmtNum(g.protein, 0)} g</span></div></div>
-        <div class="lg"><i style="background:var(--a)"></i><div><b>Aplicação</b><span>${next ? (next.days > 0 ? `em ${relativeDays(next.date)}` : next.days === 0 ? 'hoje' : `atrasada ${Math.abs(next.days)}d`) : 'não configurada'}</span></div></div>
-      </section>`;
+        <div style="flex:1">
+          ${[
+            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(water)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water' },
+            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(totals.protein,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein' },
+            { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':'Em '+relativeDays(next.date)):'—') : '—', meta:hasInj?'Configurada':'Não configurada', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings' }
+          ].map(item => `
+            <div class="row" style="align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer" data-act="${item.fn}" data-key="${item.key}">
+              <div style="width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:${item.color}22;color:${item.color}">${icon(item.icon,18)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                  <span style="font-weight:600">${item.label}</span>
+                  <span class="tiny muted">${item.cur} / ${item.meta}</span>
+                </div>
+                <div style="height:6px;background:var(--s2);border-radius:999px;margin-top:6px;overflow:hidden">
+                  <div style="height:100%;width:${Math.round(item.pct*100)}%;background:${item.color};transition:width .6s ease"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:2px">
+                  <span class="tiny muted">${Math.round(item.pct*100)}%</span>
+                  <button class="btn btn-soft" style="padding:2px 8px;font-size:12px" data-quick="${item.key}">${item.action}</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>`;
+
 
   view.innerHTML = `
     <header class="page-head">
@@ -103,7 +149,7 @@ export default async function todayScreen(view) {
     </header>
 
     <div class="stack">
-      ${heroCard}
+      ${ringsCard}
 
       <section class="card">
         ${weightBlock}
@@ -140,13 +186,34 @@ export default async function todayScreen(view) {
   });
 
   view.querySelectorAll('[data-act]').forEach((el) => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-quick]')) return;
       const act = el.dataset.act;
       if (act === 'weight') return weightSheet({ onDone: refresh });
       if (act === 'water') return waterSheet({ current: water, onDone: refresh });
       if (act === 'meal') return mealSheet({ onDone: refresh });
       if (act === 'injection') return injectionSheet({ onDone: refresh });
       if (act === 'symptom') return symptomSheet({ onDone: refresh });
+      if (act === 'settings') return go('ajustes');
+      if (act === 'protein') return mealSheet({ onDone: refresh });
+    });
+  });
+
+  view.querySelectorAll('[data-quick]').forEach((el) => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const key = el.dataset.quick;
+      if (key === 'water') {
+        const total = await addWater(250, today);
+        toast(`+250 ml · ${fmtVol(total)} L`);
+        refresh({ keepScroll: true });
+      } else if (key === 'protein') {
+        // placeholder quick add protein via meal sheet
+        toast('Abra o diário para registrar proteína');
+        go('diario');
+      } else if (key === 'injection') {
+        injectionSheet({ onDone: refresh });
+      }
     });
   });
 
