@@ -283,7 +283,7 @@ export function waterSheet({ date = todayISO(), current = 0, onDone } = {}) {
         await addWater(value, date);
       }
       localStorage.setItem('vitta_water_last', String(value));
-      onDone?.(await getWater(date));
+      onDone?.();
     },
   });
 }
@@ -436,7 +436,7 @@ export function proteinSheet({ date = todayISO(), current = 0, onDone } = {}) {
         await addProtein(value, date);
       }
       localStorage.setItem('vitta_protein_last', String(value));
-      onDone?.(await getProtein(date));
+      onDone?.();
     },
   });
 }

@@ -69,6 +69,11 @@ function applyTheme() {
 
 async function boot() {
   document.documentElement.style.setProperty('--app-name', `"${APP.name}"`);
+  const { supabase } = await import('./supabase.js');
+  const { data: { session } } = await supabase.auth.getSession();
+  const isLogged = !!session?.user;
+  localStorage.removeItem('vitta_user');
+
   await loadSettings();
   applyTheme();
   buildTabbar();
@@ -80,25 +85,16 @@ async function boot() {
   const { initReminders } = await import('./reminders.js');
   initReminders();
 
-  const onboarded = localStorage.getItem('vitta_onboarded');
   const current = parsePath();
-  const { supabase } = await import('./supabase.js');
-  const { data: { session } } = await supabase.auth.getSession();
-  const isLogged = !!session?.user;
-  localStorage.removeItem('vitta_user');
-
-  if (!onboarded && !['onboarding','login','bemvindo'].includes(current)) {
-    location.replace('#/onboarding');
-    return;
-  }
 
   if (!isLogged && !['onboarding','login'].includes(current)) {
     location.replace('#/login');
     return;
   }
 
-  if (!state.settings.onboarded && isLogged && parsePath() !== 'bemvindo') {
+  if (!state.settings.onboarded && isLogged && !['bemvindo','onboarding','login'].includes(current)) {
     location.replace('#/bemvindo');
+    return;
   }
 
   document.querySelector('.fab')?.addEventListener('click', openQuickMenu);

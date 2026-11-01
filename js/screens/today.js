@@ -220,11 +220,13 @@ export default async function todayScreen(view) {
       e.stopPropagation();
       const key = el.dataset.quick;
       if (key === 'water') {
-        const total = await addWater(250, today);
+        const res = await addWater(250, today);
+        const total = res?.sum ?? res;
         toast(`+250 ml · ${fmtVol(total)} L`);
         refresh({ keepScroll: true });
       } else if (key === 'protein') {
-        const total = await addProtein(20, today);
+        const res = await addProtein(20, today);
+        const total = res?.sum ?? res;
         toast(`+20 g · ${total} g`);
         refresh({ keepScroll: true });
       } else if (key === 'injection') {

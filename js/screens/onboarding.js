@@ -55,7 +55,6 @@ export default function onboardingScreen(view) {
         index++;
         render();
       } else {
-        localStorage.setItem('vitta_onboarded', '1');
         go('login');
       }
     });
