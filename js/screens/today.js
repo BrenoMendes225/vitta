@@ -158,64 +158,6 @@ export default async function todayScreen(view) {
     : `<p class="small muted" style="margin:0 0 12px">Defina o medicamento e o intervalo para o app calcular a próxima aplicação e o rodízio de local.</p>
        <button class="btn btn-soft btn-block" data-go="ajustes">Configurar</button>`;
 
-  const ringsCard = `
-    <div id="rings">
-    <section class="card hero" style="padding:20px">
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
-        <p class="card-label" style="margin:0">Ritual de hoje</p>
-        <span class="tiny muted">Constância, não perfeição</span>
-      </div>
-      <div class="row" style="align-items:center;gap:24px">
-        <div style="position:relative;width:140px;height:140px">
-          <svg viewBox="0 0 140 140" style="width:100%;height:100%;transform:rotate(-90deg)">
-            <circle cx="70" cy="70" r="60" fill="none" stroke="var(--s2)" stroke-width="12"/>
-            <circle cx="70" cy="70" r="60" fill="none" stroke="var(--w)" stroke-width="12" stroke-linecap="round"
-              stroke-dasharray="${2*Math.PI*60}" stroke-dashoffset="${2*Math.PI*60*(1-waterPct)}" style="transition:stroke-dashoffset .8s ease"/>
-            <circle cx="70" cy="70" r="44" fill="none" stroke="var(--s2)" stroke-width="12"/>
-            <circle cx="70" cy="70" r="44" fill="none" stroke="var(--p)" stroke-width="12" stroke-linecap="round"
-              stroke-dasharray="${2*Math.PI*44}" stroke-dashoffset="${2*Math.PI*44*(1-proteinPct)}" style="transition:stroke-dashoffset .8s ease"/>
-            <circle cx="70" cy="70" r="28" fill="none" stroke="var(--s2)" stroke-width="12"/>
-            <circle cx="70" cy="70" r="28" fill="none" stroke="var(--a)" stroke-width="12" stroke-linecap="round"
-              stroke-dasharray="${2*Math.PI*28}" stroke-dashoffset="${2*Math.PI*28*(1-cycPct)}" style="transition:stroke-dashoffset .8s ease"/>
-          </svg>
-          <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center">
-            <div>
-              <div style="font-size:28px;font-weight:700;line-height:1">${overallLabel}</div>
-              <div class="tiny muted">média das metas</div>
-            </div>
-          </div>
-        </div>
-        <div style="flex:1">
-          ${[
-            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(water)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water', history: days.map(d=> (waterHistory[d]||0) >= g.water ? 1 : 0) },
-            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(protein,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein', history: days.map(d=> g.protein && (proteinHistory[d]||0) >= g.protein ?1:0) },
-            { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':'Em '+relativeDays(next.date)):'—') : '—', meta:hasInj?'Configurada':'Não configurada', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings', history: hasInj ? days.map(d=> injections.some(i=>i.date===d) ?1:0) : [] }
-          ].map(item => `
-            <div class="row" style="align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer" data-act="${item.fn}" data-key="${item.key}">
-              <div style="width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:${item.color}22;color:${item.color}">${icon(item.icon,18)}</div>
-              <div style="flex:1;min-width:0">
-                <div style="display:flex;justify-content:space-between;align-items:baseline">
-                  <span style="font-weight:600">${item.label}</span>
-                  <span class="tiny muted">${item.cur} / ${item.meta}</span>
-                </div>
-                <div style="height:6px;background:var(--s2);border-radius:999px;margin-top:6px;overflow:hidden">
-                  <div style="height:100%;width:${Math.round(item.pct*100)}%;background:${item.color};transition:width .6s ease"></div>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-top:2px;align-items:center">
-                  <span class="tiny muted">${Math.round(item.pct*100)}%</span>
-                  <div style="display:flex;gap:4px">
-                    ${item.history?.map((ok,i)=>`<span style="width:6px;height:6px;border-radius:50%;background:${ok?item.color:'var(--mut)'};opacity:${ok?1:0.4}"></span>`).join('')||''}
-                  </div>
-                  <button class="btn btn-soft" style="padding:2px 8px;font-size:12px" data-quick="${item.key}">${item.action}</button>
-                </div>
-                ${Math.round(item.pct*100)===100 ? `<div class="tiny" style="color:var(--ok);margin-top:4px">Meta alcançada com carinho hoje.</div>` : ''}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-    </div>`;
 
 
   view.innerHTML = `
