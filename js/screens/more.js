@@ -65,8 +65,6 @@ export default async function moreScreen(view) {
   } else if (weights.length > 0) {
     const lastKg = Number(latestW?.kg);
     progressText = `Agora ${fmtKg(lastKg)} kg${goalWeight ? ` · meta ${fmtKg(goalWeight)} kg` : ''}`;
-  } else {
-    progressText = 'Comece registrando seu peso';
   }
 
   // Streak
@@ -78,7 +76,7 @@ export default async function moreScreen(view) {
   addDates(symptomsAll);
   addDates(injectionsAll);
   const streakDays = streak(Array.from(datesSet), todayISO());
-  const streakLabel = streakDays > 0 ? `🔥 ${streakDays} dias seguidos` : 'Comece sua sequência';
+  const streakLabel = streakDays > 0 ? `🔥 ${streakDays} dias seguidos` : '';
 
   const name = state.settings.name || 'Você';
   const age = ageFrom(state.settings.birthDate);
@@ -125,10 +123,11 @@ export default async function moreScreen(view) {
         </div>
 
         <div style="margin-top:14px">
+          ${progressText || streakLabel ? `
           <div class="row">
-            <span class="small strong">${progressText}</span>
-            <span class="small muted">${streakLabel}</span>
-          </div>
+            ${progressText ? `<span class="small strong">${progressText}</span>` : ''}
+            ${streakLabel ? `<span class="small muted">${streakLabel}</span>` : ''}
+          </div>` : ''}
           ${progressValue != null ? `<div class="bar"><i style="width:${(progressValue * 100).toFixed(1)}%"></i></div>` : ``}
         </div>
 
