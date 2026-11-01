@@ -1004,6 +1004,7 @@ body[data-route="login"] .fab { display: none; }
 body[data-route="onboarding"] .nav { display: none; }
 body[data-route="login"] .nav { display: none; }
 body[data-route] #view { padding-bottom: calc(var(--tabbar-h, 64px) + env(safe-area-inset-bottom, 0px) + 24px); }
+body[data-route="hoje"] #view { padding-bottom: calc(var(--tabbar-h, 64px) + env(safe-area-inset-bottom, 0px) + 32px); }
 body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 24px); }
 
 /* Icon colors per group */
