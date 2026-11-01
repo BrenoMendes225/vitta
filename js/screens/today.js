@@ -13,21 +13,62 @@ import { nextInjection, doseLabel } from '../schedule.js';
 import { weightSheet, waterSheet, proteinSheet, mealSheet, injectionSheet, symptomSheet } from '../forms.js';
 import { refresh, go } from '../router.js';
 
+const todayCache = { date: null, data: null };
+
 export default async function todayScreen(view) {
   const today = todayISO();
   const days = Array.from({length:7}, (_,i)=> addDays(today, -6+i));
-  const [weights, mealsAll, injections, waterToday, symptoms] = await Promise.all([
-    db.inRange('weights', addDays(today, -90), today),
-    db.inRange('meals', addDays(today, -7), today),
-    db.inRange('injections', addDays(today, -90), today),
-    getWater(today),
-    db.byDate('symptoms', today),
-  ]);
-  // água dos últimos 7 dias
-  const waterHistory = {};
-  await Promise.all(days.map(async d => { waterHistory[d] = await getWater(d); }));
-  const proteinHistory = {};
-  await Promise.all(days.map(async d => { proteinHistory[d] = await getProtein(d); }));
+  
+  async function loadFreshData(){
+    const [wts, meals, inj, waterToday, symp] = await Promise.all([
+      db.inRange('weights', addDays(today, -90), today),
+      db.inRange('meals', addDays(today, -7), today),
+      db.inRange('injections', addDays(today, -90), today),
+      getWater(today),
+      db.byDate('symptoms', today),
+    ]);
+    const wh = {};
+    const ph = {};
+    await Promise.all(days.map(async d => {
+      wh[d] = await getWater(d);
+      ph[d] = await getProtein(d);
+    }));
+    const w = waterToday;
+    const p = await getProtein(today);
+    return { weights: wts, mealsAll: meals, injections: inj, symptoms: symp, waterHistory: wh, proteinHistory: ph, water: w, protein: p };
+  }
+  
+  // Usa cache em memória para evitar requisições repetidas na mesma sessão
+  let weights, mealsAll, injections, symptoms, waterHistory, proteinHistory, water, protein;
+  const fromCache = todayCache.date === today && todayCache.data;
+  if (fromCache){
+    ({ weights, mealsAll, injections, symptoms, waterHistory, proteinHistory, water, protein } = todayCache.data);
+  } else {
+    const fresh = await loadFreshData();
+    ({ weights, mealsAll, injections, symptoms, waterHistory, proteinHistory, water, protein } = fresh);
+    todayCache.date = today;
+    todayCache.data = fresh;
+  }
+
+  // Revalidação em segundo plano se veio do cache
+  if (fromCache){
+    (async () => {
+      const fresh = await loadFreshData();
+      if (fresh){
+        todayCache.date = today;
+        todayCache.data = fresh;
+        // atualiza UI se mudou
+        if (fresh.water !== waterVar || fresh.protein !== proteinVar){
+          waterVar = fresh.water;
+          proteinVar = fresh.protein;
+          waterHistory = fresh.waterHistory;
+          proteinHistory = fresh.proteinHistory;
+          refreshRings();
+        }
+      }
+    })();
+  }
+
   const mealsByDay = {};
   days.forEach(d => { mealsByDay[d] = mealsAll.filter(m=>m.date===d); });
 
@@ -35,8 +76,8 @@ export default async function todayScreen(view) {
   const summary = weightSummary(weights, state.settings);
   const meals = mealsByDay[today] || [];
   const totals = mealTotals(meals);
-  let water = waterHistory[today] || 0;
-  let protein = await getProtein(today);
+  let waterVar = water;
+  let proteinVar = protein;
   const next = nextInjection(state.settings, injections);
   const firstName = (state.settings.name || '').trim().split(' ')[0];
   const spark = summary.daily.slice(-14).map((p) => ({ date: p.date, value: p.value }));
@@ -48,8 +89,8 @@ export default async function todayScreen(view) {
   const cycPct = hasInj && next ? Math.min(1, Math.max(0, (7 - next.days) / 7)) : 0;
 
   function buildRings() {
-    const waterPct = g.water ? Math.min(1, water / g.water) : 0;
-    const proteinPct = g.protein ? Math.min(1, protein / g.protein) : 0;
+    const waterPct = g.water ? Math.min(1, waterVar / g.water) : 0;
+    const proteinPct = g.protein ? Math.min(1, proteinVar / g.protein) : 0;
     const metas = [];
     if (g.water) metas.push(waterPct);
     if (g.protein) metas.push(proteinPct);
@@ -86,8 +127,8 @@ export default async function todayScreen(view) {
         </div>
         <div style="flex:1">
           ${[
-            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(water)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water', history: days.map(d=> (waterHistory[d]||0) >= g.water ? 1 : 0) },
-            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(protein,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein', history: days.map(d=> g.protein && (proteinHistory[d]||0) >= g.protein ?1:0) },
+            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(waterVar)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water', history: days.map(d=> (waterHistory[d]||0) >= g.water ? 1 : 0) },
+            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(proteinVar,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein', history: days.map(d=> g.protein && (proteinHistory[d]||0) >= g.protein ?1:0) },
             { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':'Em '+relativeDays(next.date)):'—') : '—', meta:hasInj?'Configurada':'Não configurada', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings', history: hasInj ? days.map(d=> injections.some(i=>i.date===d) ?1:0) : [] }
           ].map(item => `
             <div class="row" style="align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer" data-act="${item.fn}" data-key="${item.key}">
@@ -216,12 +257,12 @@ export default async function todayScreen(view) {
     if (!actEl || actEl.closest('[data-quick]')) return;
     const act = actEl.dataset.act;
     if (act === 'weight') return weightSheet({ onDone: refresh });
-    if (act === 'water') return waterSheet({ current: water, onDone: async () => { water = await getWater(today); refreshRings(); } });
+    if (act === 'water') return waterSheet({ current: waterVar, onDone: async () => { waterVar = await getWater(today); refreshRings(); } });
     if (act === 'meal') return mealSheet({ onDone: refresh });
     if (act === 'injection') return injectionSheet({ onDone: refresh });
     if (act === 'symptom') return symptomSheet({ onDone: refresh });
     if (act === 'settings') return go('ajustes');
-    if (act === 'protein') return proteinSheet({ current: protein, onDone: async () => { protein = await getProtein(today); refreshRings(); } });
+    if (act === 'protein') return proteinSheet({ current: proteinVar, onDone: async () => { proteinVar = await getProtein(today); refreshRings(); } });
   });
 
   function refreshRings() {
@@ -236,20 +277,20 @@ export default async function todayScreen(view) {
     const key = quickBtn.dataset.quick;
     if (key === 'water') {
       console.time('water-update');
-      const optimistic = water + 250;
-      water = optimistic;
+      const optimistic = waterVar + 250;
+      waterVar = optimistic;
       refreshRings();
       console.timeEnd('water-update');
       toast(`+250 ml · ${fmtVol(optimistic)} L`);
-      addWater(250, today).catch(()=>{ water = water - 250; refreshRings(); toast('Erro ao salvar. Tente novamente.'); });
+      addWater(250, today).catch(()=>{ waterVar = waterVar - 250; refreshRings(); toast('Erro ao salvar. Tente novamente.'); });
     } else if (key === 'protein') {
       console.time('protein-update');
-      const optimistic = protein + 20;
-      protein = optimistic;
+      const optimistic = proteinVar + 20;
+      proteinVar = optimistic;
       refreshRings();
       console.timeEnd('protein-update');
       toast(`+20 g · ${optimistic} g`);
-      addProtein(20, today).catch(()=>{ protein = protein - 20; refreshRings(); toast('Erro ao salvar. Tente novamente.'); });
+      addProtein(20, today).catch(()=>{ proteinVar = proteinVar - 20; refreshRings(); toast('Erro ao salvar. Tente novamente.'); });
     } else if (key === 'injection') {
       if (hasInj) {
         injectionSheet({ onDone: refresh });
