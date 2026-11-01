@@ -9,23 +9,23 @@
 
 :root {
   /* Light theme — palette inspirada no arquivo de referência */
-  --bg: #f4f1f8;
-  --s1: #fff;
-  --s2: #ece7f4;
-  --ink: #261a33;
-  --mut: #7a6d8a;
-  --w: #2f9bf0;
-  --p: #f2557e;
-  --a: #f2a024;
-  --ok: #23a671;
-  --bd: rgba(38, 26, 51, 0.09);
-  --p-14: rgba(242, 85, 126, 0.14);
-  --p-18: rgba(242, 85, 126, 0.18);
-  --p-50: rgba(242, 85, 126, 0.5);
-  --w-18: rgba(47, 155, 240, 0.18);
-  --a-14: rgba(242, 160, 36, 0.14);
-  --a-18: rgba(242, 160, 36, 0.18);
-  --ok-18: rgba(35, 166, 113, 0.18);
+  --bg: #f7f9fc;
+  --s1: #ffffff;
+  --s2: #eef2f7;
+  --ink: #0b1326;
+  --mut: #5a6478;
+  --w: #5cb6ff;
+  --p: #10b981;
+  --a: #f9bd22;
+  --ok: #4fd49b;
+  --bd: rgba(11, 19, 38, 0.08);
+  --p-14: rgba(16, 185, 129, 0.14);
+  --p-18: rgba(16, 185, 129, 0.18);
+  --p-50: rgba(16, 185, 129, 0.5);
+  --w-18: rgba(92, 182, 255, 0.18);
+  --a-14: rgba(249, 189, 34, 0.14);
+  --a-18: rgba(249, 189, 34, 0.18);
+  --ok-18: rgba(79, 212, 155, 0.18);
   --danger-16: rgba(214, 69, 69, 0.16);
   --glass: rgba(255, 255, 255, 0.88);
   --hd: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
@@ -1012,9 +1012,9 @@ body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--saf
   --a: #f9bd22;
   --ok: #4fd49b;
   --bd: rgba(255, 255, 255, 0.08);
-  --p-14: rgba(255, 122, 156, 0.14);
-  --p-18: rgba(255, 122, 156, 0.18);
-  --p-50: rgba(255, 122, 156, 0.5);
+  --p-14: rgba(78, 222, 163, 0.14);
+  --p-18: rgba(78, 222, 163, 0.18);
+  --p-50: rgba(78, 222, 163, 0.5);
   --w-18: rgba(92, 182, 255, 0.18);
   --a-14: rgba(255, 194, 77, 0.14);
   --a-18: rgba(255, 194, 77, 0.18);
@@ -1024,9 +1024,11 @@ body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--saf
   --accent-ink: #0a0812;
 }
 :root[data-theme="light"] {
-  --bg: #f4f1f8;
-  --s1: #fff;
-  --s2: #ece7f4;
-  --ink: #261a33;
-  --mut: #7a6d8a;
+  --bg: #f7f9fc;
+  --s1: #ffffff;
+  --s2: #eef2f7;
+  --ink: #0b1326;
+  --mut: #5a6478;
+  --p: #10b981;
+  --a: #f9bd22;
 }
