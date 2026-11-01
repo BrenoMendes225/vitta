@@ -12,13 +12,16 @@ export default async function loginScreen(view) {
     view.innerHTML = `
       <div class="auth-wrap">
         <div class="auth-card card hero">
-          <h1>Vitta</h1>
-          <p class="subhead">Entre ou crie sua conta para sincronizar seus dados.</p>
+          <div class="auth-brand">
+            <div class="auth-logo">${icon('activity', 28, 2)}</div>
+            <h1>Vitta</h1>
+          </div>
+          <p class="subhead">Entre ou crie sua conta para sincronizar seus dados com segurança.</p>
 
           <form id="auth-form" class="stack-sm">
             ${field({ label: 'E-mail', name: 'email', type: 'email', required: true, autocomplete: 'email' })}
             ${field({ label: 'Senha', name: 'password', type: 'password', required: true, autocomplete: 'current-password', minlength: 6 })}
-            <button class="btn btn-primary btn-block" type="submit">
+            <button class="btn btn-primary btn-block" type="submit" style="margin-top:8px">
               ${mode === 'login' ? 'Entrar' : 'Criar conta'}
             </button>
           </form>
