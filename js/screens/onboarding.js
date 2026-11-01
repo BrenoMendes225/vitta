@@ -2,50 +2,62 @@
 import { go } from '../router.js';
 import { icon } from '../icons.js';
 
+const STEPS = [
+  { emoji: '⚖️', title: 'Peso & Medidas', desc: 'Acompanhe evolução semanal com gráficos simples e sem cobrança.' },
+  { emoji: '🍽️', title: 'Diário alimentar com IA', desc: 'Descreva ou fotografe a refeição e o Gemini estima macros em segundos.' },
+  { emoji: '💧', title: 'Água, proteína e sintomas', desc: 'Metas diárias, registro rápido e insights suaves.' },
+  { emoji: '💉', title: 'Aplicações e treino', desc: 'Controle de ciclos, rodízio de local e presença no treino.' },
+];
+
 export default function onboardingScreen(view) {
-  view.innerHTML = `
-    <div class="onboarding">
-      <header class="page-head">
-        <h1>Vitta</h1>
-        <p class="subhead">Constância, não perfeição.</p>
-      </header>
+  let index = 0;
 
-      <div class="onboarding-steps">
-        <section class="card hero">
-          <div class="soft-emoji">⚖️</div>
-          <h2>Peso & Medidas</h2>
-          <p>Acompanhe evolução semanal com gráficos simples e sem cobrança.</p>
-        </section>
+  const render = () => {
+    const step = STEPS[index];
+    view.innerHTML = `
+      <div class="onboarding">
+        <header class="page-head">
+          <h1>Vitta</h1>
+          <p class="subhead">Constância, não perfeição.</p>
+        </header>
 
-        <section class="card hero">
-          <div class="soft-emoji">🍽️</div>
-          <h2>Diário alimentar com IA</h2>
-          <p>Descreva ou fotografe a refeição e o Gemini estima macros em segundos.</p>
-        </section>
+        <div class="onboarding-stepper">
+          <section class="card hero onboarding-card">
+            <div class="soft-emoji">${step.emoji}</div>
+            <h2>${step.title}</h2>
+            <p>${step.desc}</p>
+          </section>
 
-        <section class="card hero">
-          <div class="soft-emoji">💧</div>
-          <h2>Água, proteína e sintomas</h2>
-          <p>Metas diárias, registro rápido e insights suaves.</p>
-        </section>
+          <div class="onboarding-dots">
+            ${STEPS.map((_, i) => `<span class="dot${i === index ? ' on' : ''}"></span>`).join('')}
+          </div>
+        </div>
 
-        <section class="card hero">
-          <div class="soft-emoji">💉</div>
-          <h2>Aplicações e treino</h2>
-          <p>Controle de ciclos, rodízio de local e presença no treino.</p>
-        </section>
+        <div class="onboarding-actions">
+          <div class="row" style="gap:10px">
+            <button class="btn btn-soft" data-prev ${index === 0 ? 'disabled' : ''}>${icon('left',16)} Voltar</button>
+            <button class="btn btn-primary" data-next style="flex:1">
+              ${index === STEPS.length - 1 ? 'Começar' : 'Continuar'} ${icon('right',16)}
+            </button>
+          </div>
+          <p class="tiny muted center" style="margin-top:12px">Seus dados ficam sincronizados com sua conta.</p>
+        </div>
       </div>
+    `;
 
-      <div class="onboarding-actions">
-        <button class="btn btn-primary btn-block" data-next>Começar</button>
-        <p class="tiny muted center" style="margin-top:12px">Seus dados ficam no seu aparelho. Login opcional com Supabase para sincronizar entre dispositivos.</p>
-      </div>
-    </div>
-  `;
+    view.querySelector('[data-prev]')?.addEventListener('click', () => {
+      if (index > 0) { index--; render(); }
+    });
+    view.querySelector('[data-next]').addEventListener('click', () => {
+      if (index < STEPS.length - 1) {
+        index++;
+        render();
+      } else {
+        localStorage.setItem('vitta_onboarded', '1');
+        go('login');
+      }
+    });
+  };
 
-  view.querySelector('[data-next]').addEventListener('click', () => {
-    // marca que já viu onboarding
-    localStorage.setItem('vitta_onboarded', '1');
-    go('login');
-  });
+  render();
 }
