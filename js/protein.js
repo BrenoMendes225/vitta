@@ -36,11 +36,12 @@ export async function setProtein(g, date = todayISO()) {
 export async function addProtein(g, date = todayISO()) {
   await migrateIfNeeded(date);
   const entries = await getKV(proteinEntriesKey(date), []);
-  entries.push({ id: crypto.randomUUID(), g: Number(g), time: nowHM() });
+  const id = crypto.randomUUID();
+  entries.push({ id, g: Number(g), time: nowHM() });
   await setKV(proteinEntriesKey(date), entries);
   const sum = entries.reduce((s, e) => s + Number(e.g || 0), 0);
   await setKV(proteinKey(date), sum);
-  return sum;
+  return { sum, id };
 }
 
 export async function removeProteinEntry(id, date = todayISO()) {

@@ -41,11 +41,12 @@ export async function setWater(ml, date = todayISO()) {
 export async function addWater(ml, date = todayISO()) {
   await migrateIfNeeded(date);
   const entries = await getKV(waterEntriesKey(date), []);
-  entries.push({ id: crypto.randomUUID(), ml: Number(ml), time: nowHM() });
+  const id = crypto.randomUUID();
+  entries.push({ id, ml: Number(ml), time: nowHM() });
   await setKV(waterEntriesKey(date), entries);
   const sum = entries.reduce((s, e) => s + Number(e.ml || 0), 0);
   await setKV(waterKey(date), sum);
-  return sum;
+  return { sum, id };
 }
 
 export async function removeWaterEntry(id, date = todayISO()) {

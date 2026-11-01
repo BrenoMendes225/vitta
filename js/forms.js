@@ -188,6 +188,7 @@ export function waterSheet({ date = todayISO(), current = 0, onDone } = {}) {
           <div id="water-progress" style="height:100%;width:${progress(current)*100}%;background:var(--w);transition:width .4s"></div>
         </div>
       </div>
+      <div id="water-undo" style="display:none;margin-bottom:8px;padding:8px 10px;border-radius:10px;background:var(--s2);font-size:13px"></div>
       <p class="small muted" style="margin:0 0 8px">Quanto você bebeu?</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button type="button" class="chip ${mode==='add'?'on':''}" data-mode="add">Adicionar</button>
@@ -240,14 +241,23 @@ export function waterSheet({ date = todayISO(), current = 0, onDone } = {}) {
       form.querySelectorAll('[data-quick]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const ml = Number(btn.dataset.quick);
-          await addWater(ml, date);
-          const total = await getWater(date);
-          current = total;
+          const res = await addWater(ml, date);
+          current = res.sum;
           localStorage.setItem('vitta_water_last', String(ml));
-          toast(`Adicionado +${ml} ml · Desfazer`);
           await renderHistory(hist);
           updateProgress();
-          refreshTimeout?.();
+          const undo = document.getElementById('water-undo');
+          undo.innerHTML = `Adicionado +${ml} ml · <button type="button" class="link" data-undo>Desfazer</button>`;
+          undo.style.display = 'block';
+          const timer = setTimeout(()=>{ undo.style.display='none'; }, 5000);
+          undo.querySelector('[data-undo]').onclick = async ()=>{
+            clearTimeout(timer);
+            await removeWaterEntry(res.id, date);
+            current = await getWater(date);
+            await renderHistory(hist);
+            updateProgress();
+            undo.style.display='none';
+          };
         });
       });
 
@@ -333,6 +343,7 @@ export function proteinSheet({ date = todayISO(), current = 0, onDone } = {}) {
           <div id="protein-progress" style="height:100%;width:${Math.min(1,current/goal)*100}%;background:var(--p);transition:width .4s"></div>
         </div>
       </div>
+      <div id="protein-undo" style="display:none;margin-bottom:8px;padding:8px 10px;border-radius:10px;background:var(--s2);font-size:13px"></div>
       <p class="small muted" style="margin:0 0 8px">Quanto você consumiu?</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button type="button" class="chip ${mode==='add'?'on':''}" data-mode="add">Adicionar</button>
@@ -385,13 +396,23 @@ export function proteinSheet({ date = todayISO(), current = 0, onDone } = {}) {
       form.querySelectorAll('[data-quick]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const g = Number(btn.dataset.quick);
-          await addProtein(g, date);
-          const total = await getProtein(date);
-          current = total;
+          const res = await addProtein(g, date);
+          current = res.sum;
           localStorage.setItem('vitta_protein_last', String(g));
-          toast(`Adicionado +${g} g · Desfazer`);
           await renderHistory(hist);
           updateProgress();
+          const undo = document.getElementById('protein-undo');
+          undo.innerHTML = `Adicionado +${g} g · <button type="button" class="link" data-undo>Desfazer</button>`;
+          undo.style.display = 'block';
+          const timer = setTimeout(()=>{ undo.style.display='none'; }, 5000);
+          undo.querySelector('[data-undo]').onclick = async ()=>{
+            clearTimeout(timer);
+            await removeProteinEntry(res.id, date);
+            current = await getProtein(date);
+            await renderHistory(hist);
+            updateProgress();
+            undo.style.display='none';
+          };
         });
       });
 
