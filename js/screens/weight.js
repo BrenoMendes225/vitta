@@ -148,7 +148,6 @@ export default async function weightScreen(view) {
         <h1>Peso</h1>
         <p class="subhead">A média de 7 dias mostra a tendência real — o peso do dia oscila.</p>
       </div>
-      <button class="icon-btn" data-add aria-label="Registrar peso">${icon('plus', 20)}</button>
     </header>
 
     <div class="stack">
