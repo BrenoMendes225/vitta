@@ -47,7 +47,6 @@ export default async function welcomeScreen(view) {
       </section>
 
       <button class="btn btn-primary btn-block" type="submit" style="min-height:52px">Começar</button>
-      <button class="btn btn-ghost btn-block" type="button" data-skip>Configurar depois</button>
 
       <p class="disclaimer center">
         Seus dados ficam neste aparelho. Nada é enviado para servidores nossos.<br>
@@ -98,5 +97,4 @@ export default async function welcomeScreen(view) {
     e.preventDefault();
     await finish();
   });
-  view.querySelector('[data-skip]').addEventListener('click', () => finish({ skip: true }));
 }
