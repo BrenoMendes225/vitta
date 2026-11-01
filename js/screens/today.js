@@ -14,17 +14,25 @@ import { refresh, go } from '../router.js';
 
 export default async function todayScreen(view) {
   const today = todayISO();
-  const [weights, meals, injections, water, symptoms] = await Promise.all([
+  const days = Array.from({length:7}, (_,i)=> addDays(today, -6+i));
+  const [weights, mealsAll, injections, waterToday, symptoms] = await Promise.all([
     db.all('weights'),
-    db.byDate('meals', today),
+    db.all('meals'),
     db.all('injections'),
     getWater(today),
     db.byDate('symptoms', today),
   ]);
+  // água dos últimos 7 dias
+  const waterHistory = {};
+  await Promise.all(days.map(async d => { waterHistory[d] = await getWater(d); }));
+  const mealsByDay = {};
+  days.forEach(d => { mealsByDay[d] = mealsAll.filter(m=>m.date===d); });
 
   const g = goals();
   const summary = weightSummary(weights, state.settings);
+  const meals = mealsByDay[today] || [];
   const totals = mealTotals(meals);
+  const water = waterHistory[today] || 0;
   const next = nextInjection(state.settings, injections);
   const firstName = (state.settings.name || '').trim().split(' ')[0];
   const spark = summary.daily.slice(-14).map((p) => ({ date: p.date, value: p.value }));
@@ -108,9 +116,9 @@ export default async function todayScreen(view) {
         </div>
         <div style="flex:1">
           ${[
-            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(water)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water' },
-            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(totals.protein,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein' },
-            { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':'Em '+relativeDays(next.date)):'—') : '—', meta:hasInj?'Configurada':'Não configurada', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings' }
+            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(water)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water', history: days.map(d=> (waterHistory[d]||0) >= g.water ? 1 : 0) },
+            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(totals.protein,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein', history: days.map(d=> { const m = mealsByDay[d]||[]; const p = m.reduce((s,x)=>s+(x.protein||0),0); return g.protein && p>=g.protein ?1:0; }) },
+            { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':'Em '+relativeDays(next.date)):'—') : '—', meta:hasInj?'Configurada':'Não configurada', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings', history: hasInj ? days.map(d=> injections.some(i=>i.date===d) ?1:0) : [] }
           ].map(item => `
             <div class="row" style="align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer" data-act="${item.fn}" data-key="${item.key}">
               <div style="width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:${item.color}22;color:${item.color}">${icon(item.icon,18)}</div>
@@ -122,10 +130,14 @@ export default async function todayScreen(view) {
                 <div style="height:6px;background:var(--s2);border-radius:999px;margin-top:6px;overflow:hidden">
                   <div style="height:100%;width:${Math.round(item.pct*100)}%;background:${item.color};transition:width .6s ease"></div>
                 </div>
-                <div style="display:flex;justify-content:space-between;margin-top:2px">
+                <div style="display:flex;justify-content:space-between;margin-top:2px;align-items:center">
                   <span class="tiny muted">${Math.round(item.pct*100)}%</span>
+                  <div style="display:flex;gap:4px">
+                    ${item.history?.map((ok,i)=>`<span style="width:6px;height:6px;border-radius:50%;background:${ok?item.color:'var(--mut)'};opacity:${ok?1:0.4}"></span>`).join('')||''}
+                  </div>
                   <button class="btn btn-soft" style="padding:2px 8px;font-size:12px" data-quick="${item.key}">${item.action}</button>
                 </div>
+                ${Math.round(item.pct*100)===100 ? `<div class="tiny" style="color:var(--ok);margin-top:4px">Meta alcançada com carinho hoje.</div>` : ''}
               </div>
             </div>
           `).join('')}
