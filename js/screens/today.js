@@ -211,18 +211,17 @@ export default async function todayScreen(view) {
     el.addEventListener('click', () => go(el.dataset.go));
   });
 
-  view.querySelectorAll('[data-act]').forEach((el) => {
-    el.addEventListener('click', (e) => {
-      if (e.target.closest('[data-quick]')) return;
-      const act = el.dataset.act;
-      if (act === 'weight') return weightSheet({ onDone: refresh });
-      if (act === 'water') return waterSheet({ current: water, onDone: async () => { water = await getWater(today); refreshRings(); } });
-      if (act === 'meal') return mealSheet({ onDone: refresh });
-      if (act === 'injection') return injectionSheet({ onDone: refresh });
-      if (act === 'symptom') return symptomSheet({ onDone: refresh });
-      if (act === 'settings') return go('ajustes');
-      if (act === 'protein') return proteinSheet({ current: protein, onDone: async () => { protein = await getProtein(today); refreshRings(); } });
-    });
+  view.addEventListener('click', (e) => {
+    const actEl = e.target.closest('[data-act]');
+    if (!actEl || actEl.closest('[data-quick]')) return;
+    const act = actEl.dataset.act;
+    if (act === 'weight') return weightSheet({ onDone: refresh });
+    if (act === 'water') return waterSheet({ current: water, onDone: async () => { water = await getWater(today); refreshRings(); } });
+    if (act === 'meal') return mealSheet({ onDone: refresh });
+    if (act === 'injection') return injectionSheet({ onDone: refresh });
+    if (act === 'symptom') return symptomSheet({ onDone: refresh });
+    if (act === 'settings') return go('ajustes');
+    if (act === 'protein') return proteinSheet({ current: protein, onDone: async () => { protein = await getProtein(today); refreshRings(); } });
   });
 
   function refreshRings() {
@@ -251,6 +250,12 @@ export default async function todayScreen(view) {
       console.timeEnd('protein-update');
       toast(`+20 g · ${optimistic} g`);
       addProtein(20, today).catch(()=>{ protein = protein - 20; refreshRings(); toast('Erro ao salvar. Tente novamente.'); });
+    } else if (key === 'injection') {
+      if (hasInj) {
+        injectionSheet({ onDone: refresh });
+      } else {
+        go('ajustes');
+      }
     }
   });
 

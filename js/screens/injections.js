@@ -120,7 +120,6 @@ export default async function injectionsScreen(view) {
     </div>`;
 
   view.querySelectorAll('[data-add]').forEach((el) => el.addEventListener('click', () => {
-    if (!cfg.intervalDays) return go('ajustes');
     injectionSheet({ onDone: refresh });
   }));
   view.querySelector('[data-settings]')?.addEventListener('click', () => go('ajustes'));
