@@ -3,12 +3,12 @@ import { supabase } from './supabase.js';
 
 async function getUserId() {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-  return user.id;
+  return user?.id || null;
 }
 
 async function table(name) {
   const userId = await getUserId();
+  if (!userId) return { name, userId: null };
   return { name, userId };
 }
 
@@ -18,9 +18,9 @@ export async function uid() {
 
 export async function put(store, record) {
   const { name: t, userId } = await table(store);
+  if (!userId) return record;
   const payload = { ...record, user_id: userId };
   if (!payload.id) payload.id = crypto.randomUUID();
-  // map date field
   const { error } = await supabase.from(t).upsert(payload);
   if (error) throw error;
   return payload;
@@ -28,6 +28,7 @@ export async function put(store, record) {
 
 export async function get(store, key) {
   const { name: t, userId } = await table(store);
+  if (!userId) return null;
   const { data, error } = await supabase.from(t).select('*').eq('id', key).eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
   return data || null;
@@ -35,6 +36,7 @@ export async function get(store, key) {
 
 export async function remove(store, key) {
   const { name: t, userId } = await table(store);
+  if (!userId) return false;
   const { error } = await supabase.from(t).delete().eq('id', key).eq('user_id', userId);
   if (error) throw error;
   return true;
@@ -42,6 +44,7 @@ export async function remove(store, key) {
 
 export async function all(store) {
   const { name: t, userId } = await table(store);
+  if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).order('date', { ascending: false });
   if (error) throw error;
   return data || [];
@@ -49,6 +52,7 @@ export async function all(store) {
 
 export async function byDate(store, date) {
   const { name: t, userId } = await table(store);
+  if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).eq('date', date);
   if (error) throw error;
   return data || [];
@@ -56,6 +60,7 @@ export async function byDate(store, date) {
 
 export async function inRange(store, fromISO, toISO) {
   const { name: t, userId } = await table(store);
+  if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*')
     .eq('user_id', userId)
     .gte('date', fromISO)
@@ -72,6 +77,7 @@ export async function count(store) {
 /* KV / settings */
 export async function getKV(k, fallback = null) {
   const userId = await getUserId();
+  if (!userId) return fallback;
   const { data, error } = await supabase.from('settings').select('data').eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
   const val = data?.data?.[k];
@@ -80,6 +86,7 @@ export async function getKV(k, fallback = null) {
 
 export async function setKV(k, v) {
   const userId = await getUserId();
+  if (!userId) return;
   const { data: existing } = await supabase.from('settings').select('data').eq('user_id', userId).single();
   const merged = { ...(existing?.data || {}), [k]: v };
   const { error } = await supabase.from('settings').upsert({ user_id: userId, data: merged });
@@ -88,6 +95,7 @@ export async function setKV(k, v) {
 
 export async function kvAll() {
   const userId = await getUserId();
+  if (!userId) return {};
   const { data, error } = await supabase.from('settings').select('data').eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
   return data?.data || {};
@@ -111,4 +119,16 @@ export async function importAll(data) {
     }
   }
   return total;
+}
+
+/* Photos helper – mantém compatibilidade com a tela atual */
+export async function savePhoto(blob, meta = {}) {
+  const { name: t, userId } = await table('photos');
+  if (!userId) return null;
+  // Por simplicidade, não faz upload real. Guarda metadados.
+  const id = crypto.randomUUID();
+  const record = { id, user_id: userId, date: meta.date || new Date().toISOString().slice(0,10), kind: meta.kind || 'weight', url: '', note: '' };
+  const { error } = await supabase.from('photos').insert(record);
+  if (error) throw error;
+  return { id, url: '' };
 }

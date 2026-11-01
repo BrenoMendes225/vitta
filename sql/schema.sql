@@ -90,6 +90,17 @@ create table if not exists public.settings (
   updated_at timestamptz default now()
 );
 
+-- Photos
+create table if not exists public.photos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  date date not null,
+  kind text,
+  url text,
+  note text,
+  created_at timestamptz default now()
+);
+
 -- RLS
 alter table public.profiles enable row level security;
 alter table public.weights enable row level security;
@@ -99,6 +110,7 @@ alter table public.workouts enable row level security;
 alter table public.symptoms enable row level security;
 alter table public.injections enable row level security;
 alter table public.settings enable row level security;
+alter table public.photos enable row level security;
 
 -- Policies
 create policy "user can manage own profiles" on public.profiles
@@ -123,4 +135,7 @@ create policy "user can manage own injections" on public.injections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "user can manage own settings" on public.settings
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "user can manage own photos" on public.photos
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

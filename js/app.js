@@ -67,13 +67,16 @@ async function boot() {
 
   const onboarded = localStorage.getItem('vitta_onboarded');
   const current = parsePath();
+  const { supabase } = await import('./supabase.js');
+  const { data: { session } } = await supabase.auth.getSession();
+  const isLogged = !!session?.user || localStorage.getItem('vitta_user') === 'guest';
 
   if (!onboarded && !['onboarding','login','bemvindo'].includes(current)) {
     location.replace('#/onboarding');
     return;
   }
 
-  if (!localStorage.getItem('vitta_user') && !localStorage.getItem('vitta_onboarded') && !['onboarding','login'].includes(current)) {
+  if (!isLogged && !['onboarding','login'].includes(current)) {
     location.replace('#/login');
     return;
   }
