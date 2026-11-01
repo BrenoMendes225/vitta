@@ -106,7 +106,6 @@ export default async function moreScreen(view) {
   view.innerHTML = `
     <header class="page-head">
       <div>
-        <p class="eyebrow">${cap(dayPhrase())}</p>
       </div>
     </header>
 
@@ -130,7 +129,7 @@ export default async function moreScreen(view) {
             <span class="small strong">${progressText}</span>
             <span class="small muted">${streakLabel}</span>
           </div>
-          ${progressValue != null ? `<div class="bar"><i style="width:${(progressValue * 100).toFixed(1)}%"></i></div>` : `<div class="small muted" style="margin-top:6px">${progressText}</div>`}
+          ${progressValue != null ? `<div class="bar"><i style="width:${(progressValue * 100).toFixed(1)}%"></i></div>` : ``}
         </div>
 
         <div class="grid-3" style="margin-top:14px">
@@ -175,7 +174,6 @@ export default async function moreScreen(view) {
           ${item('ajustes', 'sliders', 'Ajustes', 'metas, medicamento e IA')}
           ${item('backup', 'download', 'Backup', 'exportar e importar seus dados')}
           ${item('ajustes', 'bell', 'Lembretes', 'em breve')}
-          ${item('ajustes', 'lock', 'Bloqueio por PIN', 'em breve')}
           ${item('ajustes', 'palette', 'Tema e unidades', 'em breve')}
         </div>
       </section>
