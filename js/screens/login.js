@@ -6,6 +6,9 @@ import { icon } from '../icons.js';
 import { state } from '../store.js';
 
 export default async function loginScreen(view) {
+  // esconde FAB e tabbar nesta tela
+  document.querySelector('.fab') && (document.querySelector('.fab').style.display = 'none');
+  document.querySelector('.nav') && (document.querySelector('.nav').style.display = 'none');
   let mode = localStorage.getItem('vitta_login_mode') || 'login';
 
   const render = () => {

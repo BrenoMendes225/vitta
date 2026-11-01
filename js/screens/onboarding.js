@@ -10,6 +10,8 @@ const STEPS = [
 ];
 
 export default function onboardingScreen(view) {
+  document.querySelector('.fab') && (document.querySelector('.fab').style.display = 'none');
+  document.querySelector('.nav') && (document.querySelector('.nav').style.display = 'none');
   let index = 0;
 
   const render = () => {
