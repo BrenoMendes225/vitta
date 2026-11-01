@@ -102,6 +102,8 @@ export function closeSheet() {
   const sheet = activeSheet;
   activeSheet = null;
   document.body.classList.remove('so');
+  const sh = document.getElementById('sh');
+  if (sh) sh.style.transform = '';
   sheet?.onClose?.();
 }
 
@@ -139,6 +141,7 @@ export function openSheet({
   const sh = document.getElementById('sh');
   sh.innerHTML = '<div class="grab"></div>' + html;
   document.body.classList.add('so');
+  sh.style.transform = '';
 
   const form = sh.querySelector('form');
   const api = {
@@ -160,6 +163,34 @@ export function openSheet({
   };
 
   activeSheet = api;
+
+  // drag to close
+  const grab = sh.querySelector('.grab');
+  let dragStartY = 0;
+  let dragging = false;
+  const onPointerDown = (e) => {
+    dragStartY = e.clientY;
+    dragging = true;
+    try { grab.setPointerCapture(e.pointerId); } catch {}
+    sh.style.transition = 'none';
+  };
+  const onPointerMove = (e) => {
+    if (!dragging) return;
+    const dy = e.clientY - dragStartY;
+    if (dy > 0) sh.style.transform = `translateY(${dy}px)`;
+  };
+  const onPointerUp = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    const dy = e.clientY - dragStartY;
+    sh.style.transition = 'transform .2s ease';
+    sh.style.transform = '';
+    if (dy > 80) closeSheet();
+  };
+  grab.addEventListener('pointerdown', onPointerDown);
+  grab.addEventListener('pointermove', onPointerMove);
+  grab.addEventListener('pointerup', onPointerUp);
+  grab.addEventListener('pointercancel', onPointerUp);
 
   // delegação: um único listener no #sh, ligado uma vez
   if (!sh.dataset.wired) {
