@@ -49,13 +49,7 @@ export default async function loginScreen(view) {
           </form>
 
           ${!isSignup ? `
-            <div class="row" style="gap:8px;margin-top:12px">
-              <button class="btn btn-soft btn-block" data-google>${icon('google',18)} Entrar com Google</button>
-            </div>
-            <div class="auth-switch" style="margin-top:8px">
-              <button class="link" data-magic>Enviar link mágico por e-mail</button>
-            </div>
-            <div class="auth-switch">
+            <div class="auth-switch" style="margin-top:12px">
               <button class="link" data-forgot>Esqueci minha senha</button>
             </div>
           ` : ''}
@@ -65,8 +59,6 @@ export default async function loginScreen(view) {
               ? `<button class="link" data-switch>Já tenho conta</button>`
               : `<button class="link" data-switch>Não tem conta? Cadastre-se</button>`}
           </div>
-
-          <button class="btn btn-soft btn-block" data-continue style="margin-top:16px">Continuar sem login</button>
         </div>
       </div>
     `;
@@ -83,30 +75,6 @@ export default async function loginScreen(view) {
       mode = mode === 'login' ? 'signup' : 'login';
       localStorage.setItem('vitta_login_mode', mode);
       render();
-    });
-
-    view.querySelector('[data-continue]')?.addEventListener('click', () => {
-      go('hoje');
-    });
-
-    view.querySelector('[data-google]')?.addEventListener('click', async () => {
-      try {
-        await supabase.auth.signInWithOAuth({ provider: 'google' });
-      } catch (err) {
-        toast(err.message || 'Erro ao entrar com Google');
-      }
-    });
-
-    view.querySelector('[data-magic]')?.addEventListener('click', async () => {
-      const email = view.querySelector('[name="email"]')?.value.trim();
-      if (!email) return toast('Informe seu e-mail primeiro');
-      try {
-        const { error } = await supabase.auth.signInWithOtp({ email });
-        if (error) throw error;
-        toast('Link enviado! Cheque seu e-mail');
-      } catch (err) {
-        toast(err.message || 'Erro ao enviar link');
-      }
     });
 
     view.querySelector('[data-forgot]')?.addEventListener('click', async () => {
