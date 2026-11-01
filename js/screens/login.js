@@ -23,7 +23,9 @@ export default async function loginScreen(view) {
           <p class="subhead">${isSignup ? 'Crie sua conta para sincronizar seus dados.' : 'Entre ou crie sua conta para sincronizar seus dados com segurança.'}</p>
 
           <form id="auth-form" class="stack-sm">
+            ${isSignup ? field({ label: 'Nome', name: 'name', type: 'text', required: true, autocomplete: 'name' }) : ''}
             ${field({ label: 'E-mail', name: 'email', type: 'text', inputmode: 'email', required: true, autocomplete: 'email' })}
+            ${isSignup ? field({ label: 'Data de nascimento', name: 'birthdate', type: 'date', required: true }) : ''}
             <div class="field">
               <label for="f-password">Senha</label>
               <div class="input-wrap" style="position:relative">
@@ -130,8 +132,18 @@ export default async function loginScreen(view) {
           if (password.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
           if (!form.terms?.checked) throw new Error('É preciso aceitar os Termos de Uso e a Política de Privacidade.');
           if (!form.age?.checked) throw new Error('Você precisa ter 18 anos ou mais.');
-          const { error } = await supabase.auth.signUp({ email, password });
+          const name = form.name?.value.trim() || '';
+          const birthdate = form.birthdate?.value || '';
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { name, birthdate } }
+          });
           if (error) throw error;
+          // criar perfil básico
+          if (data.user) {
+            await supabase.from('profiles').upsert({ id: data.user.id, name, birth_date: birthdate });
+          }
           toast('Conta criada! Verifique seu e-mail se necessário.');
         } else {
           const { error } = await supabase.auth.signInWithPassword({ email, password });
