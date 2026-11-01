@@ -107,7 +107,6 @@ export default async function injectionsScreen(view) {
         <h1>Aplicações</h1>
         <p class="subhead">${cfg.name ? esc(cfg.name) : 'Dose, data e rodízio em dia.'}</p>
       </div>
-      <button class="icon-btn" data-add aria-label="Registrar aplicação">${icon('plus', 20)}</button>
     </header>
 
     <div class="stack">
