@@ -107,7 +107,6 @@ export default async function moreScreen(view) {
     <header class="page-head">
       <div>
         <p class="eyebrow">${cap(dayPhrase())}</p>
-        <h1>Mais</h1>
       </div>
     </header>
 
