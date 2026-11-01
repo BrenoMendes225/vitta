@@ -225,13 +225,6 @@ export default async function todayScreen(view) {
         </button>
       </section>
 
-      <div class="quick-grid">
-        <button class="quick" data-act="weight">${icon('scale', 21)}Pesar</button>
-        <button class="quick" data-act="meal">${icon('bowl', 21)}Refeição</button>
-        <button class="quick" data-act="water">${icon('drop', 21)}Água</button>
-        <button class="quick" data-act="symptom">${icon('activity', 21)}Sintomas</button>
-      </div>
-
       ${symptoms.length ? '' : `
       <button class="card flat" data-act="symptom" style="text-align:left;border:0;width:100%">
         <div class="row">

@@ -70,13 +70,12 @@ export default async function injectionsScreen(view) {
       </section>`
     : `<section class="card">
         <div class="row" style="justify-content:space-between;align-items:center">
-          <p class="card-label" style="margin:0">Esquema configurado</p>
+          <p class="card-label" style="margin:0">Última aplicação</p>
           <button class="btn btn-soft btn-sm" data-config>Editar</button>
         </div>
         <p class="small muted" style="margin:8px 0 0">
           ${esc(cfg.name || '—')} · ${esc(doseLabel(cfg) || '—')} · ${cfg.intervalDays ? `a cada ${cfg.intervalDays} dias` : 'intervalo não definido'}
         </p>
-        <button class="btn btn-primary btn-block" data-add style="margin-top:16px">${icon('syringe', 18)} Registrar aplicação</button>
       </section>`;
   
   const heroSection = next ? hero + schemePrompt : schemePrompt;
