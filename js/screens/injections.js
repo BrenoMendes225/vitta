@@ -65,7 +65,7 @@ export default async function injectionsScreen(view) {
         </p>
         <div class="row" style="gap:8px">
           <button class="btn btn-primary btn-block" data-add style="flex:1">${icon('syringe', 18)} Registrar aplicação</button>
-          <button class="btn btn-soft btn-block" data-config style="flex:0 0 140px">Configurar esquema</button>
+          <button class="btn btn-soft btn-block" data-config style="flex:0 0 140px">Registrar aplicação</button>
         </div>
       </section>`
     : `<section class="card">
