@@ -19,7 +19,7 @@ export default async function loginScreen(view) {
           <p class="subhead">Entre ou crie sua conta para sincronizar seus dados com segurança.</p>
 
           <form id="auth-form" class="stack-sm">
-            ${field({ label: 'E-mail', name: 'email', type: 'email', required: true, autocomplete: 'email' })}
+            ${field({ label: 'E-mail', name: 'email', type: 'text', inputmode: 'email', required: true, autocomplete: 'email' })}
             ${field({ label: 'Senha', name: 'password', type: 'password', required: true, autocomplete: 'current-password', minlength: 6 })}
             <button class="btn btn-primary btn-block" type="submit" style="margin-top:8px">
               ${mode === 'login' ? 'Entrar' : 'Criar conta'}
