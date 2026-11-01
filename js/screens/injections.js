@@ -1,8 +1,8 @@
 /* Tela Aplicações — próxima dose, rodízio de local e histórico. */
 
-import { state } from '../store.js';
+import { state, saveSettings } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, esc, emptyState } from '../ui.js';
+import { fmtNum, esc, emptyState, openSheet, field, str, num, toast } from '../ui.js';
 import * as db from '../supabase-db.js';
 import { todayISO, humanDate, fmtLong, weekday, relativeDays, fmtMonthYear, cap, addDays } from '../date.js';
 import { nextInjection, siteUsage, sortInjections, doseLabel } from '../schedule.js';
@@ -49,13 +49,37 @@ export default async function injectionsScreen(view) {
           ${icon('syringe', 18)} Registrar aplicação
         </button>
       </section>`
-    : `<section class="card">
-        <p class="card-title">${icon('syringe', 16)} Comece pelo esquema</p>
-        <p class="small muted" style="margin:0 0 14px">
-          Informe o medicamento, a dose e o intervalo entre aplicações. O app calcula a próxima data e faz o rodízio dos locais.
+    : '';
+  
+  const missing = [];
+  if (!cfg.name) missing.push('medicamento');
+  if (!cfg.dose) missing.push('dose');
+  if (!cfg.intervalDays) missing.push('intervalo');
+  if (!cfg.startDate) missing.push('data inicial');
+  
+  const schemePrompt = missing.length
+    ? `<section class="card">
+        <p class="card-title">${icon('syringe', 16)} Esquema de aplicação</p>
+        <p class="small muted" style="margin:0 0 12px">
+          ${cfg.name || cfg.dose ? `Falta definir: ${missing.join(', ')}.` : 'Informe o medicamento, a dose e o intervalo para calcular a próxima aplicação e o rodízio.'}
         </p>
-        <button class="btn btn-primary btn-block" data-settings>Configurar esquema</button>
+        <div class="row" style="gap:8px">
+          <button class="btn btn-primary btn-block" data-add style="flex:1">${icon('syringe', 18)} Registrar aplicação</button>
+          <button class="btn btn-soft btn-block" data-config style="flex:0 0 140px">Configurar esquema</button>
+        </div>
+      </section>`
+    : `<section class="card">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <p class="card-label" style="margin:0">Esquema configurado</p>
+          <button class="btn btn-soft btn-sm" data-config>Editar</button>
+        </div>
+        <p class="small muted" style="margin:8px 0 0">
+          ${esc(cfg.name || '—')} · ${esc(doseLabel(cfg) || '—')} · ${cfg.intervalDays ? `a cada ${cfg.intervalDays} dias` : 'intervalo não definido'}
+        </p>
+        <button class="btn btn-primary btn-block" data-add style="margin-top:16px">${icon('syringe', 18)} Registrar aplicação</button>
       </section>`;
+  
+  const heroSection = next ? hero + schemePrompt : schemePrompt;
 
   const rotation = injections.length || cfg.startDate
     ? `<section class="card">
@@ -110,7 +134,7 @@ export default async function injectionsScreen(view) {
     </header>
 
     <div class="stack">
-      ${hero}
+      ${heroSection}
       ${rotation}
       ${injections.length ? `<div class="row" style="padding:4px 2px 0">
         <span class="small strong muted" style="letter-spacing:.03em;text-transform:uppercase;font-size:11px">Histórico</span>
@@ -122,7 +146,38 @@ export default async function injectionsScreen(view) {
   view.querySelectorAll('[data-add]').forEach((el) => el.addEventListener('click', () => {
     injectionSheet({ onDone: refresh });
   }));
-  view.querySelector('[data-settings]')?.addEventListener('click', () => go('ajustes'));
+  
+  function openSchemeSheet(){
+    const cfg = state.settings.injection || {};
+    openSheet({
+      title: 'Configurar esquema',
+      submitLabel: 'Salvar',
+      body: `
+        ${field({ label: 'Medicamento', name: 'name', value: cfg.name || '' })}
+        ${field({ label: 'Dose', name: 'dose', value: cfg.dose || '' })}
+        ${field({ label: 'Intervalo entre aplicações (dias)', name: 'intervalDays', inputmode: 'numeric', value: cfg.intervalDays || '' })}
+        ${field({ label: 'Data inicial', name: 'startDate', type: 'date', value: cfg.startDate || '' })}
+        ${field({ label: 'Locais do rodízio, separados por vírgula', name: 'sites', value: (cfg.sites || []).join(', ') })}
+      `,
+      onSubmit: async (form) => {
+        const sites = str(form, 'sites').split(',').map(s=>s.trim()).filter(Boolean);
+        await saveSettings({
+          injection: {
+            ...cfg,
+            name: str(form, 'name'),
+            dose: str(form, 'dose'),
+            intervalDays: num(form, 'intervalDays'),
+            startDate: str(form, 'startDate'),
+            sites: sites.length ? sites : cfg.sites,
+          }
+        });
+        toast('Esquema atualizado');
+        refresh();
+      }
+    });
+  }
+  
+  view.querySelectorAll('[data-config]').forEach((el) => el.addEventListener('click', openSchemeSheet));
 
   view.querySelectorAll('[data-edit]').forEach((el) => {
     el.addEventListener('click', () => {

@@ -1006,6 +1006,7 @@ body[data-route="login"] .nav { display: none; }
 body[data-route] #view { padding-bottom: calc(var(--tabbar-h, 64px) + env(safe-area-inset-bottom, 0px) + 24px); }
 body[data-route="hoje"] #view { padding-bottom: calc(var(--tabbar-h, 64px) + env(safe-area-inset-bottom, 0px) + 32px); }
 body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 24px); }
+body[data-route="ajustes"] #view { padding-bottom: calc(var(--tabbar-h, 64px) + env(safe-area-inset-bottom, 0px) + 24px); }
 
 /* Icon colors per group */
 .stack > .card.tight:nth-of-type(1) .li-icon { color: var(--p); }
