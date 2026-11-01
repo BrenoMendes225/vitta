@@ -1,6 +1,7 @@
 /* Componentes de interface: folhas (bottom sheets), toasts, campos e formatação. */
 
 import { icon } from './icons.js';
+import { state } from './store.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -24,6 +25,34 @@ export function fmtNum(value, dec = 0) {
 }
 
 export const fmtKg = (v) => fmtNum(v, 1);
+
+export function fmtWeight(v) {
+  const units = state.settings?.units || 'metric';
+  if (!Number.isFinite(Number(v))) return '—';
+  const n = Number(v);
+  if (units === 'imperial') {
+    return fmtNum(n * 2.20462, 1);
+  }
+  return fmtNum(n, 1);
+}
+export function weightUnitLabel() {
+  return (state.settings?.units || 'metric') === 'imperial' ? 'lb' : 'kg';
+}
+
+export function fmtHeight(cm) {
+  const units = state.settings?.units || 'metric';
+  if (!Number.isFinite(Number(cm))) return '—';
+  const n = Number(cm);
+  if (units === 'imperial') {
+    const inches = n * 0.393701;
+    return fmtNum(inches, 0);
+  }
+  return fmtNum(n, 0);
+}
+export function heightUnitLabel() {
+  return (state.settings?.units || 'metric') === 'imperial' ? 'in' : 'cm';
+}
+
 export function fmtL(ml) {
   return fmtNum(Number(ml) / 1000, 2);
 }

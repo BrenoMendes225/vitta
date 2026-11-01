@@ -1,6 +1,6 @@
 /* Bootstrap do app. */
 
-import { loadSettings, state, APP } from './store.js';
+import { loadSettings, state, APP, on } from './store.js';
 import { startRouter, go, parsePath } from './router.js';
 import { icon } from './icons.js';
 import { openSheet, closeSheet } from './ui.js';
@@ -60,10 +60,19 @@ window.openQuickMenu = openQuickMenu;
 window.closeSheet = closeSheet;
 window.openSheet = openSheet;
 
+function applyTheme() {
+  const t = state.settings.theme || 'auto';
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = t === 'dark' || (t === 'auto' && prefersDark);
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+}
+
 async function boot() {
   document.documentElement.style.setProperty('--app-name', `"${APP.name}"`);
   await loadSettings();
+  applyTheme();
   buildTabbar();
+  on('settings', applyTheme);
 
   const onboarded = localStorage.getItem('vitta_onboarded');
   const current = parsePath();

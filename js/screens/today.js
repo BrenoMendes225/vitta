@@ -2,7 +2,7 @@
 
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, fmtKg, fmtVol, esc, toast } from '../ui.js';
+import { fmtNum, fmtWeight, weightUnitLabel, fmtVol, esc, toast } from '../ui.js';
 import * as db from '../supabase-db.js';
 import { todayISO, humanDate, greeting, fmtShort, relativeDays, cap } from '../date.js';
 import { weightSummary, mealTotals } from '../stats.js';
@@ -40,11 +40,11 @@ export default async function todayScreen(view) {
       <div class="row start" style="align-items:flex-end">
         <div>
           <p class="card-label">Peso atual</p>
-          <p class="big">${fmtKg(summary.latest.value)}<span class="unit">kg</span></p>
+          <p class="big">${fmtWeight(summary.latest.value)}<span class="unit">${weightUnitLabel()}</span></p>
           <p class="small" style="margin:8px 0 0">
             ${summary.delta7 != null
               ? `<span class="delta ${summary.delta7 < -0.05 ? 'dn' : summary.delta7 > 0.05 ? 'up' : 'flat'}">
-                   ${summary.delta7 < -0.05 ? '−' : summary.delta7 > 0.05 ? '+' : '±'} ${fmtNum(Math.abs(summary.delta7), 1)} kg
+                   ${summary.delta7 < -0.05 ? '−' : summary.delta7 > 0.05 ? '+' : '±'} ${fmtNum(Math.abs(summary.delta7), 1)} ${weightUnitLabel()}
                  </span> <span class="muted">na média de 7 dias</span>`
               : '<span class="muted">primeiro registro</span>'}
           </p>
@@ -94,9 +94,9 @@ export default async function todayScreen(view) {
         <p class="eyebrow">${cap(humanDate(today))}</p>
         <h1>${esc(greeting())}${firstName ? `, ${esc(firstName)}` : ''}</h1>
         <p class="subhead">${summary.total != null && summary.total < -0.05
-          ? `Você já está ${fmtNum(Math.abs(summary.total), 1)} kg abaixo do início.`
+          ? `Você já está ${fmtNum(Math.abs(summary.total), 1)} ${weightUnitLabel()} abaixo do início.`
           : state.settings.goalWeight && summary.latest
-            ? `Faltam ${fmtNum(Math.max(0, summary.latest.value - state.settings.goalWeight), 1)} kg para a meta.`
+            ? `Faltam ${fmtNum(Math.max(0, summary.latest.value - state.settings.goalWeight), 1)} ${weightUnitLabel()} para a meta.`
             : 'Um dia de cada vez.'}</p>
       </div>
       <button class="avatar" data-go="ajustes" aria-label="Ajustes">${esc((firstName || 'V')[0].toUpperCase())}</button>

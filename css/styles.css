@@ -998,3 +998,34 @@ body[data-route="mais"] #view { padding-bottom: calc(var(--tabbar-h) + var(--saf
 
 /* Gentle lilac card */
 .card.gentle { background: rgba(192, 132, 252, 0.12); border-color: rgba(192,132,252,0.35); }
+
+/* Theme overrides */
+:root[data-theme="dark"] {
+  --bg: #130f1a;
+  --s1: #1e1827;
+  --s2: #2b2338;
+  --ink: #f5eefc;
+  --mut: #c3b7d6;
+  --w: #5cb6ff;
+  --p: #ff7a9c;
+  --a: #ffc24d;
+  --ok: #4fd49b;
+  --bd: rgba(255, 255, 255, 0.08);
+  --p-14: rgba(255, 122, 156, 0.14);
+  --p-18: rgba(255, 122, 156, 0.18);
+  --p-50: rgba(255, 122, 156, 0.5);
+  --w-18: rgba(92, 182, 255, 0.18);
+  --a-14: rgba(255, 194, 77, 0.14);
+  --a-18: rgba(255, 194, 77, 0.18);
+  --ok-18: rgba(79, 212, 155, 0.18);
+  --danger-16: rgba(255, 123, 123, 0.16);
+  --glass: rgba(30, 24, 39, 0.88);
+  --accent-ink: #0a0812;
+}
+:root[data-theme="light"] {
+  --bg: #f4f1f8;
+  --s1: #fff;
+  --s2: #ece7f4;
+  --ink: #261a33;
+  --mut: #7a6d8a;
+}

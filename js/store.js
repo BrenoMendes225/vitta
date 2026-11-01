@@ -18,6 +18,9 @@ export const DEFAULT_SETTINGS = {
   proteinGoal: 120,
   waterGoal: 2500,
   kcalGoal: null,
+  theme: 'auto',
+  units: 'metric',
+  remindersEnabled: false,
   injection: {
     name: '',
     dose: '',

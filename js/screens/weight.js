@@ -2,7 +2,7 @@
 
 import { state, goals } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, fmtKg, signed, esc, emptyState, openSheet } from '../ui.js';
+import { fmtNum, fmtWeight, weightUnitLabel, signed, esc, emptyState, openSheet } from '../ui.js';
 import * as db from '../supabase-db.js';
 import { todayISO, addDays, humanDate, fmtMonthYear, diffDays } from '../date.js';
 import { weightSummary, movingAverage, sortAsc } from '../stats.js';
@@ -49,12 +49,12 @@ export default async function weightScreen(view) {
         <div class="row" style="align-items:flex-end;margin:10px 0 0">
           <div>
             <p class="card-label" style="margin:0">Média de 7 dias</p>
-            <p class="metric" style="font-size:26px">${fmtKg(summary.maNow)} <span class="tiny muted">kg</span></p>
+            <p class="metric" style="font-size:26px">${fmtWeight(summary.maNow)} <span class="tiny muted">${weightUnitLabel()}</span></p>
           </div>
           <div style="text-align:right">
             <p class="small" style="margin:0">
               ${summary.delta7 != null
-                ? `<span class="delta ${summary.delta7 < -0.05 ? 'dn' : summary.delta7 > 0.05 ? 'up' : 'flat'}">${signed(summary.delta7)} kg</span>`
+                ? `<span class="delta ${summary.delta7 < -0.05 ? 'dn' : summary.delta7 > 0.05 ? 'up' : 'flat'}">${signed(summary.delta7)} ${weightUnitLabel()}</span>`
                 : '<span class="muted">—</span>'}
             </p>
             <p class="tiny muted" style="margin:2px 0 0">vs. semana anterior</p>
@@ -88,7 +88,7 @@ export default async function weightScreen(view) {
       ${summary.progress != null ? `<section class="card tight">
         <div class="row"><span class="small strong">Progresso até a meta</span><span class="small muted">${fmtNum(summary.progress * 100, 0)}%</span></div>
         <div class="bar"><i style="width:${(summary.progress * 100).toFixed(1)}%"></i></div>
-        <p class="tiny muted" style="margin:8px 0 0">${fmtKg(summary.startWeight)} kg → ${fmtKg(summary.goalWeight)} kg${bmi ? ` · IMC ${fmtNum(bmi, 1)} (${bmiLabel(bmi)})` : ''}</p>
+        <p class="tiny muted" style="margin:8px 0 0">${fmtWeight(summary.startWeight)} ${weightUnitLabel()} → ${fmtWeight(summary.goalWeight)} ${weightUnitLabel()}${bmi ? ` · IMC ${fmtNum(bmi, 1)} (${bmiLabel(bmi)})` : ''}</p>
       </section>` : ''}`
     : '';
 
@@ -112,7 +112,7 @@ export default async function weightScreen(view) {
             const date = p.meta?.date || p.date || '';
             return `<button class="ph" data-photo="${i}">
               <img src="${photoURLs[i]}" alt="Foto de ${humanDate(date)}">
-              <span>${date ? humanDate(date) : ''}${kg ? ` · ${fmtKg(kg)}` : ''}</span>
+              <span>${date ? humanDate(date) : ''}${kg ? ` · ${fmtWeight(kg)} ${weightUnitLabel()}` : ''}</span>
             </button>`;
           }).join('')}
         </div>
@@ -130,7 +130,7 @@ export default async function weightScreen(view) {
               const delta = prev ? Number(r.kg) - Number(prev.kg) : null;
               return `<button class="list-item press" data-edit="${r.id}">
                 <div class="li-main">
-                  <div class="li-title">${fmtKg(r.kg)} kg ${r.photoId ? `<span class="muted" style="font-weight:400">· foto</span>` : ''}</div>
+                  <div class="li-title">${fmtWeight(r.kg)} ${weightUnitLabel()} ${r.photoId ? `<span class="muted" style="font-weight:400">· foto</span>` : ''}</div>
                   <div class="li-sub">${humanDate(r.date)}${r.note ? ` · ${esc(r.note)}` : ''}</div>
                 </div>
                 <div class="li-end">${delta != null ? `<span class="delta ${delta < -0.05 ? 'dn' : delta > 0.05 ? 'up' : 'flat'}">${signed(delta)}</span>` : ''}</div>
@@ -183,7 +183,7 @@ export default async function weightScreen(view) {
         hideCancel: true,
         body: `
           <img class="zi" src="${photoURLs[i]}" alt="Foto de progresso">
-          ${kg ? `<p class="big" style="font-size:32px">${fmtKg(kg)}<span class="unit">kg</span></p>` : ''}
+          ${kg ? `<p class="big" style="font-size:32px">${fmtWeight(kg)}<span class="unit">${weightUnitLabel()}</span></p>` : ''}
           <p class="small muted" style="margin:0">${date ? humanDate(date) : ''}</p>`,
       });
     });

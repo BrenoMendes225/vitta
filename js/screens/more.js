@@ -1,7 +1,7 @@
 /* Tela Mais — perfil, registros, progresso e ajustes. */
 import { state, APP, goals } from '../store.js';
 import { icon } from '../icons.js';
-import { fmtNum, fmtKg, esc, openSheet, confirmSheet, toast } from '../ui.js';
+import { fmtNum, fmtWeight, weightUnitLabel, fmtHeight, heightUnitLabel, esc, openSheet, confirmSheet, toast } from '../ui.js';
 import * as db from '../supabase-db.js';
 import { ageFrom, cap, todayISO, startOfWeek, addDays } from '../date.js';
 import { weightSummary, streak } from '../stats.js';
@@ -61,10 +61,10 @@ export default async function moreScreen(view) {
     const prog = (firstKg - lastKg) / (firstKg - goalWeight);
     progressValue = Math.max(0, Math.min(1, prog));
     const remaining = lastKg - goalWeight;
-    progressText = `Início ${fmtKg(firstKg)} kg → Agora ${fmtKg(lastKg)} kg → Meta ${fmtKg(goalWeight)} kg · faltam ${fmtKg(remaining)} kg`;
+    progressText = `Início ${fmtWeight(firstKg)} ${weightUnitLabel()} → Agora ${fmtWeight(lastKg)} ${weightUnitLabel()} → Meta ${fmtWeight(goalWeight)} ${weightUnitLabel()} · faltam ${fmtWeight(remaining)} ${weightUnitLabel()}`;
   } else if (weights.length > 0) {
     const lastKg = Number(latestW?.kg);
-    progressText = `Agora ${fmtKg(lastKg)} kg${goalWeight ? ` · meta ${fmtKg(goalWeight)} kg` : ''}`;
+    progressText = `Agora ${fmtWeight(lastKg)} ${weightUnitLabel()}${goalWeight ? ` · meta ${fmtWeight(goalWeight)} ${weightUnitLabel()}` : ''}`;
   }
 
   // Streak
@@ -115,7 +115,7 @@ export default async function moreScreen(view) {
             <div class="stack-sm">
               <span class="strong" style="font-size:16px">${esc(name)}</span>
               <span class="small muted">
-                ${[age ? `${age} anos` : '', state.settings.height ? `${fmtNum(state.settings.height, 0)} cm` : ''].filter(Boolean).join(' · ') || 'Complete seu perfil'}
+                ${[age ? `${age} anos` : '', state.settings.height ? `${fmtHeight(state.settings.height)} ${heightUnitLabel()}` : ''].filter(Boolean).join(' · ') || 'Complete seu perfil'}
               </span>
             </div>
           </div>

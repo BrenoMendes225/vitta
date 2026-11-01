@@ -86,6 +86,32 @@ export default async function settingsScreen(view) {
       </section>
 
       <section class="card">
+        <p class="card-title">${icon('palette', 16)} Aparência e unidades</p>
+        <div class="form-grid">
+          ${selectField({ label: 'Tema', name: 'theme', value: st.theme || 'auto', options: [
+            {value:'auto', label:'Automático'},
+            {value:'light', label:'Claro'},
+            {value:'dark', label:'Escuro'}
+          ], span2: true })}
+          ${selectField({ label: 'Unidades', name: 'units', value: st.units || 'metric', options: [
+            {value:'metric', label:'Métrico – kg / cm'},
+            {value:'imperial', label:'Imperial – lb / in'}
+          ], span2: true })}
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="card-title">${icon('bell', 16)} Lembretes</p>
+        <div class="form-grid">
+          <label class="field span-2" style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+            <span>Notificações de água e proteína</span>
+            <input type="checkbox" name="remindersEnabled" ${st.remindersEnabled ? 'checked' : ''}>
+          </label>
+        </div>
+        <p class="tiny muted">Se permitido, você receberá lembretes suaves ao longo do dia.</p>
+      </section>
+
+      <section class="card">
         <p class="card-title">${icon('lock', 16)} Seus dados</p>
         <p class="small muted" style="margin:0 0 14px">
           Tudo fica no armazenamento deste aparelho. Faça backup antes de trocar de iPhone ou limpar o Safari.
@@ -127,6 +153,9 @@ export default async function settingsScreen(view) {
     proteinGoal: num(form, 'proteinGoal', 0),
     waterGoal: num(form, 'waterGoal', 0),
     kcalGoal: num(form, 'kcalGoal'),
+    theme: str(form, 'theme') || 'auto',
+    units: str(form, 'units') || 'metric',
+    remindersEnabled: form.elements['remindersEnabled']?.checked || false,
     injection: {
       name: str(form, 'injName'),
       dose: str(form, 'injDose'),
