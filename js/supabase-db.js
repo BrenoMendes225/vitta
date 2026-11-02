@@ -25,6 +25,11 @@ export async function put(store, record) {
   if (payload.createdAt) { payload.created_at = payload.createdAt; delete payload.createdAt; }
   if (payload.updatedAt) { delete payload.updatedAt; }
   if (payload.photoId) { payload.photo_id = payload.photoId; delete payload.photoId; }
+  // mapeamentos específicos por tabela
+  if (t === 'meals') {
+    if (payload.text !== undefined) { payload.description = payload.text; delete payload.text; }
+    if (payload.type !== undefined) { payload.meal_type = payload.type; delete payload.type; }
+  }
   try {
     const { error } = await supabase.from(t).upsert(payload);
     if (error) throw error;
@@ -40,7 +45,13 @@ export async function get(store, key) {
   if (!userId) return null;
   const { data, error } = await supabase.from(t).select('*').eq('id', key).eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
-  return data ? { ...data, createdAt: data.created_at, updatedAt: data.updated_at, photoId: data.photo_id } : null;
+  if (!data) return null;
+  const out = { ...data, createdAt: data.created_at, updatedAt: data.updated_at, photoId: data.photo_id };
+  if (t === 'meals') {
+    if (data.description !== undefined) out.text = data.description;
+    if (data.meal_type !== undefined) out.type = data.meal_type;
+  }
+  return out;
 }
 
 export async function remove(store, key) {
@@ -56,7 +67,14 @@ export async function all(store) {
   if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).order('date', { ascending: false });
   if (error) throw error;
-  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id }));
+  return (data || []).map(r => {
+    const out = { ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id };
+    if (t === 'meals') {
+      if (r.description !== undefined) out.text = r.description;
+      if (r.meal_type !== undefined) out.type = r.meal_type;
+    }
+    return out;
+  });
 }
 
 export async function byDate(store, date) {
@@ -64,7 +82,14 @@ export async function byDate(store, date) {
   if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).eq('date', date);
   if (error) throw error;
-  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id }));
+  return (data || []).map(r => {
+    const out = { ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id };
+    if (t === 'meals') {
+      if (r.description !== undefined) out.text = r.description;
+      if (r.meal_type !== undefined) out.type = r.meal_type;
+    }
+    return out;
+  });
 }
 
 export async function inRange(store, fromISO, toISO) {
@@ -75,7 +100,14 @@ export async function inRange(store, fromISO, toISO) {
     .gte('date', fromISO)
     .lte('date', toISO);
   if (error) throw error;
-  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id }));
+  return (data || []).map(r => {
+    const out = { ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id };
+    if (t === 'meals') {
+      if (r.description !== undefined) out.text = r.description;
+      if (r.meal_type !== undefined) out.type = r.meal_type;
+    }
+    return out;
+  });
 }
 
 export async function count(store) {
