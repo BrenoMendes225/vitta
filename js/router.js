@@ -36,6 +36,7 @@ const TAB_OF = {
 let currentPath = 'hoje';
 let renderToken = 0;
 const moduleCache = {};
+let firstRenderDone = false;
 
 async function loadModule(path) {
   if (moduleCache[path]) return moduleCache[path];
@@ -103,6 +104,11 @@ export async function render({ keepScroll = false } = {}) {
     view.style.opacity = '1';
     if (keepScroll) window.scrollTo(0, scrollY);
     else window.scrollTo(0, 0);
+    if (!firstRenderDone) {
+      firstRenderDone = true;
+      window.__vittaFirstRenderFired = true;
+      window.dispatchEvent(new Event('vitta:first-render'));
+    }
   } catch (err) {
     if (token === renderToken) renderError(view, err);
   }

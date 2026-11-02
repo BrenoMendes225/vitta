@@ -144,10 +144,15 @@ async function boot() {
 function hideSplash() {
   const el = document.getElementById('splash');
   if (!el) return;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    el.classList.add('out');
-    setTimeout(() => el.remove(), 450);
-  }));
+  const waitFirst = window.__vittaFirstRenderFired ? Promise.resolve() : new Promise(res => window.addEventListener('vitta:first-render', res, {once:true}));
+  const fontsReady = document.fonts ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]) : Promise.resolve();
+  Promise.all([waitFirst, fontsReady]).then(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.classList.add('out');
+      window.dispatchEvent(new Event('vitta:splash-hidden'));
+      setTimeout(() => el.remove(), 450);
+    }));
+  });
 }
 
 boot().catch((err) => {

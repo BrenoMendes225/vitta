@@ -127,17 +127,18 @@ export default async function todayScreen(view) {
         </div>
         <div style="flex:1">
           ${[
-            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(waterVar)} L`, meta:`${fmtVol(g.water)} L`, pct:waterPct, action:'+250 ml', fn:'water', history: days.map(d=> (waterHistory[d]||0) >= g.water ? 1 : 0) },
-            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(proteinVar,0)} g`, meta:`${fmtNum(g.protein,0)} g`, pct:proteinPct, action:'+20 g', fn:'protein', history: days.map(d=> g.protein && (proteinHistory[d]||0) >= g.protein ?1:0) },
-            { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':'Em '+relativeDays(next.date)):'—') : '—', meta:hasInj?'Configurada':'Não configurada', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings', history: hasInj ? days.map(d=> injections.some(i=>i.date===d) ?1:0) : [] }
+            { key:'water', label:'Água', icon:'drop', color:'var(--w)', cur:`${fmtVol(waterVar)} L / ${fmtVol(g.water)} L`, meta:'', pct:waterPct, action:'+250 ml', fn:'water', history: days.map(d=> (waterHistory[d]||0) >= g.water ? 1 : 0) },
+            { key:'protein', label:'Proteína', icon:'sparkles', color:'var(--p)', cur:`${fmtNum(proteinVar,0)} g / ${fmtNum(g.protein,0)} g`, meta:'', pct:proteinPct, action:'+20 g', fn:'protein', history: days.map(d=> g.protein && (proteinHistory[d]||0) >= g.protein ?1:0) },
+            { key:'injection', label:'Aplicação', icon:'syringe', color:'var(--a)', cur:hasInj? (next? (next.days<=0?'Hoje':relativeDays(next.date).charAt(0).toUpperCase()+relativeDays(next.date).slice(1)):'—') : 'Não configurada', meta:hasInj?'Configurada':'', pct:cycPct, action:hasInj?'Marcar':'Configurar', fn:hasInj?'injection':'settings', history: hasInj ? days.map(d=> injections.some(i=>i.date===d) ?1:0) : [] }
           ].map(item => `
             <div class="row" style="align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer" data-act="${item.fn}" data-key="${item.key}">
               <div style="width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:${item.color}22;color:${item.color}">${icon(item.icon,18)}</div>
               <div style="flex:1;min-width:0">
-                <div style="display:flex;justify-content:space-between;align-items:baseline">
-                  <span style="font-weight:600">${item.label}</span>
-                  <span class="tiny muted">${item.cur} / ${item.meta}</span>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                  <div style="font-weight:600">${item.label}</div>
+                  ${item.key==='injection' ? `<div class="tiny muted" style="margin-top:2px;white-space:nowrap">${item.meta?item.meta:''}</div>` : ''}
                 </div>
+                <div class="tiny muted" style="margin-top:2px">${item.cur}</div>
                 <div style="height:6px;background:var(--s2);border-radius:999px;margin-top:6px;overflow:hidden">
                   <div style="height:100%;width:${Math.round(item.pct*100)}%;background:${item.color};transition:width .6s ease"></div>
                 </div>
