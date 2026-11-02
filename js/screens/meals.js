@@ -57,7 +57,8 @@ export default async function mealsScreen(view) {
             <div class="li-sub">${m.time || '—'}${m.protein ? ` · ${fmtNum(m.protein, 0)} g proteína` : ''}${m.confidence ? ` · IA ${esc(m.confidence)}` : ''}</div>
           </div>
           <div class="li-end">${m.kcal ? `${fmtNum(m.kcal)} kcal` : ''}</div>
-        </button>`).join('')}</div>`
+        </button>`).join('')}</div>
+      ${isToday ? `<button class="btn btn-soft btn-block" data-add style="margin-top:12px">${icon('plus', 16)} Adicionar refeição</button>` : ''}`
     : emptyState(
         isToday ? 'Nada registrado hoje ainda.<br>Fotografe o prato e deixe a IA estimar.' : 'Nenhuma refeição registrada neste dia.',
         `<button class="btn btn-primary" data-add>${icon('plus', 17)} Registrar</button>`,
