@@ -21,6 +21,9 @@ export async function put(store, record) {
   if (!userId) return record;
   const payload = { ...record, user_id: userId };
   if (!payload.id) payload.id = crypto.randomUUID();
+  // mapeia camelCase -> snake_case para colunas de auditoria
+  if (payload.createdAt) { payload.created_at = payload.createdAt; delete payload.createdAt; }
+  if (payload.updatedAt) { payload.updated_at = payload.updatedAt; delete payload.updatedAt; }
   const { error } = await supabase.from(t).upsert(payload);
   if (error) throw error;
   return payload;
@@ -31,7 +34,7 @@ export async function get(store, key) {
   if (!userId) return null;
   const { data, error } = await supabase.from(t).select('*').eq('id', key).eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
-  return data || null;
+  return data ? { ...data, createdAt: data.created_at, updatedAt: data.updated_at } : null;
 }
 
 export async function remove(store, key) {
@@ -47,7 +50,7 @@ export async function all(store) {
   if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).order('date', { ascending: false });
   if (error) throw error;
-  return data || [];
+  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at }));
 }
 
 export async function byDate(store, date) {
@@ -55,7 +58,7 @@ export async function byDate(store, date) {
   if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).eq('date', date);
   if (error) throw error;
-  return data || [];
+  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at }));
 }
 
 export async function inRange(store, fromISO, toISO) {
@@ -66,7 +69,7 @@ export async function inRange(store, fromISO, toISO) {
     .gte('date', fromISO)
     .lte('date', toISO);
   if (error) throw error;
-  return data || [];
+  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at }));
 }
 
 export async function count(store) {
