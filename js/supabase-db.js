@@ -16,16 +16,46 @@ export async function uid() {
   return crypto.randomUUID();
 }
 
+function camelToSnake(s) {
+  return s.replace(/[A-Z]/g, l => '_' + l.toLowerCase());
+}
+function snakeToCamel(s) {
+  return s.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
+}
+function mapKeysToSnake(obj) {
+  const out = {};
+  for (const k in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+    const v = obj[k];
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      out[camelToSnake(k)] = mapKeysToSnake(v);
+    } else {
+      out[camelToSnake(k)] = v;
+    }
+  }
+  return out;
+}
+function mapKeysToCamel(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = Array.isArray(obj) ? [] : {};
+  for (const k in obj) {
+    if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+    const v = obj[k];
+    const nk = snakeToCamel(k);
+    out[nk] = v && typeof v === 'object' ? mapKeysToCamel(v) : v;
+  }
+  return out;
+}
 export async function put(store, record) {
   const { name: t, userId } = await table(store);
   if (!userId) return record;
-  const payload = { ...record, user_id: userId };
+  let payload = { ...record, user_id: userId };
   if (!payload.id) payload.id = crypto.randomUUID();
-  // mapeia camelCase -> snake_case para colunas de auditoria e fotos
-  if (payload.createdAt) { payload.created_at = payload.createdAt; delete payload.createdAt; }
-  if (payload.updatedAt) { delete payload.updatedAt; }
-  if (payload.photoId) { payload.photo_id = payload.photoId; delete payload.photoId; }
-  // mapeamentos específicos por tabela
+  // remove campos que não existem no banco
+  delete payload.updatedAt;
+  // mapeia camelCase -> snake_case de forma genérica
+  payload = mapKeysToSnake(payload);
+  // normaliza nomes específicos de meals que não seguem camel simples
   if (t === 'meals') {
     if (payload.text !== undefined) { payload.description = payload.text; delete payload.text; }
     if (payload.type !== undefined) { payload.meal_type = payload.type; delete payload.type; }
@@ -46,7 +76,7 @@ export async function get(store, key) {
   const { data, error } = await supabase.from(t).select('*').eq('id', key).eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
   if (!data) return null;
-  const out = { ...data, createdAt: data.created_at, updatedAt: data.updated_at, photoId: data.photo_id };
+  const out = mapKeysToCamel(data);
   if (t === 'meals') {
     if (data.description !== undefined) out.text = data.description;
     if (data.meal_type !== undefined) out.type = data.meal_type;
@@ -68,7 +98,7 @@ export async function all(store) {
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).order('date', { ascending: false });
   if (error) throw error;
   return (data || []).map(r => {
-    const out = { ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id };
+    const out = mapKeysToCamel(r);
     if (t === 'meals') {
       if (r.description !== undefined) out.text = r.description;
       if (r.meal_type !== undefined) out.type = r.meal_type;
@@ -83,7 +113,7 @@ export async function byDate(store, date) {
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).eq('date', date);
   if (error) throw error;
   return (data || []).map(r => {
-    const out = { ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id };
+    const out = mapKeysToCamel(r);
     if (t === 'meals') {
       if (r.description !== undefined) out.text = r.description;
       if (r.meal_type !== undefined) out.type = r.meal_type;
@@ -101,7 +131,7 @@ export async function inRange(store, fromISO, toISO) {
     .lte('date', toISO);
   if (error) throw error;
   return (data || []).map(r => {
-    const out = { ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id };
+    const out = mapKeysToCamel(r);
     if (t === 'meals') {
       if (r.description !== undefined) out.text = r.description;
       if (r.meal_type !== undefined) out.type = r.meal_type;
