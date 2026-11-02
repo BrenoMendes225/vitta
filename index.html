@@ -15,9 +15,34 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+  #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#130f1a;transition:opacity .35s ease,visibility .35s}
+  @media (prefers-color-scheme:light){#splash{background:#f4f1f8}#splash p{color:#6b6480}}
+  #splash.out{opacity:0;visibility:hidden;pointer-events:none}
+  #splash svg{width:132px;height:132px;overflow:visible}
+  #splash p{margin:0;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:#a9a3bd;letter-spacing:.01em;opacity:0;animation:sp-fade .6s ease .5s forwards}
+  .sp-ring{transform-box:view-box;transform-origin:256px 256px;animation:sp-spin 2.4s linear infinite}
+  .sp-leaf{transform-box:view-box;transform-origin:0 0;transform:scale(0);animation:sp-grow .6s cubic-bezier(.2,.8,.2,1) both,sp-breathe 2.4s ease-in-out 1s infinite alternate}
+  .sp-leaf.r{animation-delay:.12s,1.12s}
+  @keyframes sp-spin{to{transform:rotate(360deg)}}
+  @keyframes sp-grow{from{transform:scale(0)}to{transform:scale(1.25)}}
+  @keyframes sp-breathe{from{transform:scale(1.25)}to{transform:scale(1.34)}}
+  @keyframes sp-fade{to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.sp-ring,.sp-leaf{animation:none}.sp-leaf{transform:scale(1.25)}#splash p{animation:none;opacity:1}}
+</style>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+<div id="splash" role="status" aria-label="Carregando o Vitta">
+  <svg viewBox="0 0 512 512" aria-hidden="true">
+    <defs><linearGradient id="spg" gradientUnits="userSpaceOnUse" x1="130" y1="390" x2="390" y2="130"><stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#A78BFA"/></linearGradient></defs>
+    <g class="sp-ring"><path d="M397 204.7A150 150 0 1 1 307.3 115" fill="none" stroke="url(#spg)" stroke-width="36" stroke-linecap="round"/></g>
+    <path d="M256 302V334" stroke="#34D399" stroke-width="14" stroke-linecap="round"/>
+    <g transform="translate(256 302) rotate(-34)"><path class="sp-leaf" fill="#34D399" d="M0 0C-34 -30 -34 -78 0 -104C34 -78 34 -30 0 0Z"/></g>
+    <g transform="translate(256 302) rotate(34)"><path class="sp-leaf r" fill="#6EE7B7" d="M0 0C-34 -30 -34 -78 0 -104C34 -78 34 -30 0 0Z"/></g>
+  </svg>
+  <p>Constância, não perfeição</p>
+</div>
   <main id="view" aria-live="polite"></main>
   <button class="fab" aria-label="Novo registro">+</button>
   <div class="nav"><div id="tabbar" aria-label="Navegação principal"></div></div>
@@ -25,5 +50,6 @@
   <div id="sh" role="dialog" aria-modal="true"></div>
   <div id="tt" role="status"></div>
   <script type="module" src="js/app.js"></script>
+<script>setTimeout(function(){var s=document.getElementById('splash');if(s)s.classList.add('out')},8000)</script>
 </body>
 </html>

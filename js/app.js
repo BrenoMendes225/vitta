@@ -141,6 +141,15 @@ async function boot() {
   });
 }
 
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 450);
+  }));
+}
+
 boot().catch((err) => {
   console.error(err);
   document.getElementById('view').innerHTML = `
@@ -149,7 +158,7 @@ boot().catch((err) => {
       <p class="small muted" style="margin:0 0 14px">${String(err?.message || err)}</p>
       <button class="btn btn-primary btn-block" onclick="location.reload()">Tentar de novo</button>
     </div>`;
-});
+}).finally(hideSplash);
 
 /* Service worker: deixa o app disponível offline (precisa de https/localhost). */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
