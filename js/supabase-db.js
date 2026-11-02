@@ -23,10 +23,15 @@ export async function put(store, record) {
   if (!payload.id) payload.id = crypto.randomUUID();
   // mapeia camelCase -> snake_case para colunas de auditoria e fotos
   if (payload.createdAt) { payload.created_at = payload.createdAt; delete payload.createdAt; }
-  if (payload.updatedAt) { payload.updated_at = payload.updatedAt; delete payload.updatedAt; }
+  if (payload.updatedAt) { delete payload.updatedAt; }
   if (payload.photoId) { payload.photo_id = payload.photoId; delete payload.photoId; }
-  const { error } = await supabase.from(t).upsert(payload);
-  if (error) throw error;
+  try {
+    const { error } = await supabase.from(t).upsert(payload);
+    if (error) throw error;
+  } catch (e) {
+    console.error('[Vitta DB] erro ao salvar', t, e);
+    throw new Error('Não foi possível salvar agora. Seus dados estão seguros no aparelho e serão sincronizados em breve.');
+  }
   return payload;
 }
 
