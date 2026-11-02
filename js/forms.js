@@ -127,321 +127,221 @@ window.stp = (n) => {
 
 export function waterSheet({ date = todayISO(), current = 0, onDone } = {}) {
   const goal = Number(state.settings.waterGoal || 2500);
-  let mode = 'add';
-  let inputVal = 250;
+  let total = Number(current) || 0;
   let lastUsed = Number(localStorage.getItem('vitta_water_last') || 250);
+  let showOther = false;
+  let showCorrect = false;
 
-  const fmt = (ml) => fmtVol(ml);
-  const progress = (ml) => Math.min(1, ml / goal);
+  const fmtL = (ml) => (ml/1000).toLocaleString('pt-BR',{minimumFractionDigits:1, maximumFractionDigits:1}) + ' L';
 
-  async function loadEntries() {
-    return await getWaterEntries(date);
-  }
-
-  async function renderHistory(listEl) {
-    const entries = await getWaterEntries(date);
-    const total = entries.reduce((s,e)=>s+Number(e.ml||0),0);
-    listEl.innerHTML = `
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
-        <p class="card-label" style="margin:0">Hoje</p>
-        <span class="tiny muted">${fmt(total)} L</span>
-      </div>
-      ${entries.length ? entries.map(e=>`
-        <div class="row" style="justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">
-          <div>
-            <div style="font-weight:600">${e.ml} ml</div>
-            <div class="tiny muted">${e.time || ''}</div>
-          </div>
-          <button type="button" class="icon-btn bare" data-remove="${e.id}" aria-label="Remover">${icon('trash',16)}</button>
-        </div>
-      `).join('') : `<p class="tiny muted">Sem registros ainda.</p>`}
-    `;
-  }
-
-  function updateProgress() {
-    const total = Number(current) || 0;
-    const pct = progress(total);
+  const updateProgress = () => {
+    const pct = Math.min(1, total/goal);
     const bar = document.getElementById('water-progress');
     const txt = document.getElementById('water-progress-text');
     if (bar) bar.style.width = `${pct*100}%`;
-    if (txt) txt.textContent = `${fmt(total)} de ${fmt(goal)} L`;
-    const preview = document.getElementById('water-preview');
-    if (preview) {
-      const curL = total/1000;
-      const newL = mode === 'add' ? (total + inputVal)/1000 : inputVal/1000;
-      preview.textContent = `${curL.toFixed(2)} L → ${newL.toFixed(2)} L`;
-    }
-    const submit = document.querySelector('#sh form button[type="submit"]');
-    if (submit) {
-      submit.textContent = mode === 'add' ? `Adicionar ${inputVal} ml` : `Definir total: ${fmt(inputVal)} L`;
-    }
-  }
+    if (txt) txt.textContent = `${fmtL(total)} de ${fmtL(goal)}`;
+  };
 
   openSheet({
     title: 'Água',
-    submitLabel: `Adicionar ${inputVal} ml`,
+    hideSubmit: true,
+    hideCancel: true,
     body: `
-      <div style="margin-bottom:12px">
-        <div class="tiny muted">Progresso</div>
-        <div id="water-progress-text">${fmt(current)} de ${fmt(goal)} L</div>
-        <div style="height:8px;background:var(--s2);border-radius:999px;overflow:hidden;margin-top:6px">
-          <div id="water-progress" style="height:100%;width:${progress(current)*100}%;background:var(--w);transition:width .4s"></div>
+      <div id="water-undo" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:12px;background:var(--s2);font-size:14px"></div>
+      <div style="margin-bottom:16px">
+        <div id="water-progress-text" style="font-weight:600;margin-bottom:6px">${fmtL(total)} de ${fmtL(goal)}</div>
+        <div style="height:6px;background:var(--s2);border-radius:999px;overflow:hidden">
+          <div id="water-progress" style="height:100%;width:0;background:var(--w);transition:width .6s ease"></div>
         </div>
       </div>
-      <div id="water-undo" style="display:none;margin-bottom:8px;padding:8px 10px;border-radius:10px;background:var(--s2);font-size:13px"></div>
-      <p class="small muted" style="margin:0 0 8px">Quanto você bebeu?</p>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button type="button" class="chip ${mode==='add'?'on':''}" data-mode="add">Adicionar</button>
-        <button type="button" class="chip ${mode==='set'?'on':''}" data-mode="set">Definir total do dia</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <button type="button" class="icon-btn" data-step="-">−</button>
-        <input id="water-ml" name="ml" type="text" inputmode="numeric" value="${inputVal}" style="width:120px;text-align:center" />
-        <button type="button" class="icon-btn" data-step="+">+</button>
-        <span class="tiny muted">ml</span>
-      </div>
-      <div id="water-preview" class="tiny muted" style="margin-bottom:12px">${(current/1000).toFixed(2)} L → ${mode==='add' ? ((current+inputVal)/1000).toFixed(2) : (inputVal/1000).toFixed(2)} L</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <p style="font-weight:600;margin:0 0 12px">Quanto você bebeu?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         ${[200,250,350,500].map(ml=>`
-          <button type="button" class="btn btn-soft" data-quick="${ml}" style="border-color:var(--w);color:var(--ink)">
-            ${icon('droplets',16)} +${ml} ml
-          </button>
+          <button type="button" class="btn" data-quick="${ml}" style="height:64px;font-size:16px;font-weight:600;border-radius:16px;background:${ml===lastUsed?'var(--w)22':'transparent'};border:1.5px solid ${ml===lastUsed?'var(--w)':'var(--bd)'};color:var(--ink)">${ml} ml</button>
         `).join('')}
       </div>
-      <div id="water-history" style="margin-top:12px"></div>
+      <button type="button" id="water-other-toggle" style="background:none;border:0;color:var(--mut);font-size:14px;padding:8px 0">Outra quantidade</button>
+      <div id="water-other" style="display:none;margin:8px 0 12px">
+        <div style="display:flex;gap:8px">
+          <input id="water-other-input" inputmode="numeric" placeholder="ml" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--s1)">
+          <button type="button" id="water-other-add" class="btn btn-primary" style="padding:0 16px">Adicionar</button>
+        </div>
+      </div>
+      <button type="button" id="water-correct-toggle" style="background:none;border:0;color:var(--mut);font-size:13px;padding:8px 0">Corrigir total do dia</button>
+      <div id="water-correct" style="display:none;margin-top:8px">
+        <div style="display:flex;gap:8px">
+          <input id="water-correct-input" inputmode="numeric" placeholder="Total ml" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--s1)">
+          <button type="button" id="water-correct-save" class="btn btn-soft" style="padding:0 14px">Salvar</button>
+        </div>
+      </div>
+      <div id="water-history" style="margin-top:18px"></div>
     `,
-    onMount: async (form, api) => {
+    onMount: async (form) => {
       updateProgress();
-      const hist = document.getElementById('water-history');
-      await renderHistory(hist);
+      const undoEl = document.getElementById('water-undo');
 
-      form.querySelectorAll('[data-mode]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          mode = btn.dataset.mode;
-          form.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on', b===btn));
-          updateProgress();
-        });
-      });
-
-      const input = form.querySelector('#water-ml');
-      input.addEventListener('input', ()=>{
-        const v = Number(input.value.replace(/[^\d]/g,'')||0);
-        inputVal = v || 0;
+      const addMl = async (ml) => {
+        const res = await addWater(ml, date);
+        total = res.sum;
+        lastUsed = ml;
+        localStorage.setItem('vitta_water_last', String(ml));
         updateProgress();
-      });
-      form.querySelectorAll('[data-step]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const step = btn.dataset.step === '+' ? 50 : -50;
-          inputVal = Math.max(0, inputVal + step);
-          input.value = inputVal;
+        onDone?.();
+        undoEl.innerHTML = `Adicionado +${ml} ml · <button type="button" class="link" data-undo style="margin-left:6px">Desfazer</button>`;
+        undoEl.style.display = 'block';
+        const t = setTimeout(()=>{ undoEl.style.display='none'; }, 3000);
+        undoEl.querySelector('[data-undo]')?.addEventListener('click', async ()=>{
+          clearTimeout(t);
+          await removeWaterEntry(res.id, date);
+          total = await getWater(date);
           updateProgress();
+          undoEl.style.display='none';
+          onDone?.();
         });
-      });
+        // re-render buttons highlight
+        form.querySelectorAll('[data-quick]').forEach(b=>{
+          const v = Number(b.dataset.quick);
+          b.style.background = v===lastUsed?'var(--w)22':'transparent';
+          b.style.borderColor = v===lastUsed?'var(--w)':'var(--bd)';
+        });
+      };
 
       form.querySelectorAll('[data-quick]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const ml = Number(btn.dataset.quick);
-          const res = await addWater(ml, date);
-          current = res.sum;
-          localStorage.setItem('vitta_water_last', String(ml));
-          await renderHistory(hist);
-          updateProgress();
-          onDone?.();
-          const undo = document.getElementById('water-undo');
-          undo.innerHTML = `Adicionado +${ml} ml · <button type="button" class="link" data-undo>Desfazer</button>`;
-          undo.style.display = 'block';
-          const timer = setTimeout(()=>{ undo.style.display='none'; }, 5000);
-          undo.querySelector('[data-undo]').onclick = async ()=>{
-            clearTimeout(timer);
-            await removeWaterEntry(res.id, date);
-            current = await getWater(date);
-            await renderHistory(hist);
-            updateProgress();
-            undo.style.display='none';
-            onDone?.();
-          };
-        });
+        btn.addEventListener('click', ()=> addMl(Number(btn.dataset.quick)));
       });
 
-      hist.addEventListener('click', async (e)=>{
-        const rm = e.target.closest('[data-remove]');
-        if (!rm) return;
-        const id = rm.dataset.remove;
-        await removeWaterEntry(id, date);
-        const total = await getWater(date);
-        current = total;
-        await renderHistory(hist);
+      document.getElementById('water-other-toggle')?.addEventListener('click', ()=>{
+        showOther = !showOther;
+        document.getElementById('water-other').style.display = showOther ? 'block' : 'none';
+      });
+      document.getElementById('water-other-add')?.addEventListener('click', ()=>{
+        const v = Number(document.getElementById('water-other-input').value.replace(/[^\d]/g,''))||0;
+        if (v>0) addMl(v);
+      });
+      document.getElementById('water-correct-toggle')?.addEventListener('click', ()=>{
+        showCorrect = !showCorrect;
+        document.getElementById('water-correct').style.display = showCorrect ? 'block' : 'none';
+        if (showCorrect){
+          document.getElementById('water-correct-input').value = total;
+        }
+      });
+      document.getElementById('water-correct-save')?.addEventListener('click', async ()=>{
+        const v = Number(document.getElementById('water-correct-input').value.replace(/[^\d]/g,''))||0;
+        await setWater(v, date);
+        total = v;
         updateProgress();
+        onDone?.();
       });
-
-      // undo quick add? simple toast
-    },
-    onSubmit: async (form) => {
-      const value = Number(input.value.replace(/[^\d]/g,'')||0);
-      if (!value || value <= 0) throw new Error('Informe uma quantidade.');
-      if (mode === 'set') {
-        await setWater(value, date);
-      } else {
-        await addWater(value, date);
-      }
-      localStorage.setItem('vitta_water_last', String(value));
-      onDone?.();
-    },
+    }
   });
 }
 
 export function proteinSheet({ date = todayISO(), current = 0, onDone } = {}) {
   const goal = Number(state.settings.proteinGoal || 120);
-  let mode = 'add';
-  let inputVal = 20;
+  let total = Number(current) || 0;
   let lastUsed = Number(localStorage.getItem('vitta_protein_last') || 20);
+  let showOther = false;
+  let showCorrect = false;
 
-  async function renderHistory(listEl) {
-    const entries = await getProteinEntries(date);
-    const total = entries.reduce((s,e)=>s+Number(e.g||0),0);
-    listEl.innerHTML = `
-      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
-        <p class="card-label" style="margin:0">Hoje</p>
-        <span class="tiny muted">${total} g / ${goal} g</span>
-      </div>
-      ${entries.length ? entries.map(e=>`
-        <div class="row" style="justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">
-          <div>
-            <div style="font-weight:600">${e.g} g</div>
-            <div class="tiny muted">${e.time || ''}</div>
-          </div>
-          <button type="button" class="icon-btn bare" data-remove="${e.id}" aria-label="Remover">${icon('trash',16)}</button>
-        </div>
-      `).join('') : `<p class="tiny muted">Sem registros ainda.</p>`}
-    `;
-  }
+  const fmt = (g) => Number(g).toLocaleString('pt-BR') + ' g';
 
-  function updateProgress() {
-    const total = Number(current) || 0;
+  const updateProgress = () => {
     const pct = Math.min(1, total/goal);
     const bar = document.getElementById('protein-progress');
     const txt = document.getElementById('protein-progress-text');
     if (bar) bar.style.width = `${pct*100}%`;
-    if (txt) txt.textContent = `${total} g de ${goal} g`;
-    const preview = document.getElementById('protein-preview');
-    if (preview) {
-      const newVal = mode === 'add' ? total + inputVal : inputVal;
-      preview.textContent = `${total} g → ${newVal} g`;
-    }
-    const submit = document.querySelector('#sh form button[type="submit"]');
-    if (submit) {
-      submit.textContent = mode === 'add' ? `Adicionar ${inputVal} g` : `Definir total: ${inputVal} g`;
-    }
-  }
+    if (txt) txt.textContent = `${fmt(total)} de ${fmt(goal)}`;
+  };
 
   openSheet({
     title: 'Proteína',
-    submitLabel: `Adicionar ${inputVal} g`,
+    hideSubmit: true,
+    hideCancel: true,
     body: `
-      <div style="margin-bottom:12px">
-        <div class="tiny muted">Progresso</div>
-        <div id="protein-progress-text">${current} g de ${goal} g</div>
-        <div style="height:8px;background:var(--s2);border-radius:999px;overflow:hidden;margin-top:6px">
-          <div id="protein-progress" style="height:100%;width:${Math.min(1,current/goal)*100}%;background:var(--p);transition:width .4s"></div>
+      <div id="protein-undo" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:12px;background:var(--s2);font-size:14px"></div>
+      <div style="margin-bottom:16px">
+        <div id="protein-progress-text" style="font-weight:600;margin-bottom:6px">${fmt(total)} de ${fmt(goal)}</div>
+        <div style="height:6px;background:var(--s2);border-radius:999px;overflow:hidden">
+          <div id="protein-progress" style="height:100%;width:0;background:var(--p);transition:width .6s ease"></div>
         </div>
       </div>
-      <div id="protein-undo" style="display:none;margin-bottom:8px;padding:8px 10px;border-radius:10px;background:var(--s2);font-size:13px"></div>
-      <p class="small muted" style="margin:0 0 8px">Quanto você consumiu?</p>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button type="button" class="chip ${mode==='add'?'on':''}" data-mode="add">Adicionar</button>
-        <button type="button" class="chip ${mode==='set'?'on':''}" data-mode="set">Definir total do dia</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <button type="button" class="icon-btn" data-step="-">−</button>
-        <input id="protein-g" name="g" type="text" inputmode="numeric" value="${inputVal}" style="width:120px;text-align:center" />
-        <button type="button" class="icon-btn" data-step="+">+</button>
-        <span class="tiny muted">g</span>
-      </div>
-      <div id="protein-preview" class="tiny muted" style="margin-bottom:12px">${current} g → ${current+inputVal} g</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        ${[10,20,30,50].map(g=>`
-          <button type="button" class="btn btn-soft" data-quick="${g}" style="border-color:var(--p);color:var(--ink)">
-            ${icon('sparkles',16)} +${g} g
-          </button>
+      <p style="font-weight:600;margin:0 0 12px">Quanto você consumiu?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        ${[20,30,40,50].map(g=>`
+          <button type="button" class="btn" data-quick="${g}" style="height:64px;font-size:16px;font-weight:600;border-radius:16px;background:${g===lastUsed?'var(--p)22':'transparent'};border:1.5px solid ${g===lastUsed?'var(--p)':'var(--bd)'};color:var(--ink)">${g} g</button>
         `).join('')}
       </div>
-      <div id="protein-history" style="margin-top:12px"></div>
+      <button type="button" id="protein-other-toggle" style="background:none;border:0;color:var(--mut);font-size:14px;padding:8px 0">Outra quantidade</button>
+      <div id="protein-other" style="display:none;margin:8px 0 12px">
+        <div style="display:flex;gap:8px">
+          <input id="protein-other-input" inputmode="numeric" placeholder="g" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--s1)">
+          <button type="button" id="protein-other-add" class="btn btn-primary" style="padding:0 16px">Adicionar</button>
+        </div>
+      </div>
+      <button type="button" id="protein-correct-toggle" style="background:none;border:0;color:var(--mut);font-size:13px;padding:8px 0">Corrigir total do dia</button>
+      <div id="protein-correct" style="display:none;margin-top:8px">
+        <div style="display:flex;gap:8px">
+          <input id="protein-correct-input" inputmode="numeric" placeholder="Total g" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--s1)">
+          <button type="button" id="protein-correct-save" class="btn btn-soft" style="padding:0 14px">Salvar</button>
+        </div>
+      </div>
     `,
-    onMount: async (form, api) => {
+    onMount: async (form) => {
       updateProgress();
-      const hist = document.getElementById('protein-history');
-      await renderHistory(hist);
+      const undoEl = document.getElementById('protein-undo');
 
-      form.querySelectorAll('[data-mode]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          mode = btn.dataset.mode;
-          form.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on', b===btn));
-          updateProgress();
-        });
-      });
-
-      const input = form.querySelector('#protein-g');
-      input.addEventListener('input', ()=>{
-        const v = Number(input.value.replace(/[^\d]/g,'')||0);
-        inputVal = v || 0;
+      const addG = async (g) => {
+        const res = await addProtein(g, date);
+        total = res.sum;
+        lastUsed = g;
+        localStorage.setItem('vitta_protein_last', String(g));
         updateProgress();
-      });
-      form.querySelectorAll('[data-step]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const step = btn.dataset.step === '+' ? 10 : -10;
-          inputVal = Math.max(0, inputVal + step);
-          input.value = inputVal;
+        onDone?.();
+        undoEl.innerHTML = `Adicionado +${g} g · <button type="button" class="link" data-undo style="margin-left:6px">Desfazer</button>`;
+        undoEl.style.display = 'block';
+        const t = setTimeout(()=>{ undoEl.style.display='none'; }, 3000);
+        undoEl.querySelector('[data-undo]')?.addEventListener('click', async ()=>{
+          clearTimeout(t);
+          await removeProteinEntry(res.id, date);
+          total = await getProtein(date);
           updateProgress();
+          undoEl.style.display='none';
+          onDone?.();
         });
-      });
+        form.querySelectorAll('[data-quick]').forEach(b=>{
+          const v = Number(b.dataset.quick);
+          b.style.background = v===lastUsed?'var(--p)22':'transparent';
+          b.style.borderColor = v===lastUsed?'var(--p)':'var(--bd)';
+        });
+      };
 
       form.querySelectorAll('[data-quick]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const g = Number(btn.dataset.quick);
-          const res = await addProtein(g, date);
-          current = res.sum;
-          localStorage.setItem('vitta_protein_last', String(g));
-          await renderHistory(hist);
-          updateProgress();
-          onDone?.();
-          const undo = document.getElementById('protein-undo');
-          undo.innerHTML = `Adicionado +${g} g · <button type="button" class="link" data-undo>Desfazer</button>`;
-          undo.style.display = 'block';
-          const timer = setTimeout(()=>{ undo.style.display='none'; }, 5000);
-          undo.querySelector('[data-undo]').onclick = async ()=>{
-            clearTimeout(timer);
-            await removeProteinEntry(res.id, date);
-            current = await getProtein(date);
-            await renderHistory(hist);
-            updateProgress();
-            undo.style.display='none';
-            onDone?.();
-          };
-        });
+        btn.addEventListener('click', ()=> addG(Number(btn.dataset.quick)));
       });
 
-      hist.addEventListener('click', async (e)=>{
-        const rm = e.target.closest('[data-remove]');
-        if (!rm) return;
-        const id = rm.dataset.remove;
-        await removeProteinEntry(id, date);
-        const total = await getProtein(date);
-        current = total;
-        await renderHistory(hist);
-        updateProgress();
+      document.getElementById('protein-other-toggle')?.addEventListener('click', ()=>{
+        showOther = !showOther;
+        document.getElementById('protein-other').style.display = showOther ? 'block' : 'none';
       });
-    },
-    onSubmit: async (form) => {
-      const value = Number(inputVal);
-      if (!value || value <= 0) throw new Error('Informe uma quantidade.');
-      if (mode === 'set') {
-        await setProtein(value, date);
-      } else {
-        await addProtein(value, date);
-      }
-      localStorage.setItem('vitta_protein_last', String(value));
-      onDone?.();
-    },
+      document.getElementById('protein-other-add')?.addEventListener('click', ()=>{
+        const v = Number(document.getElementById('protein-other-input').value.replace(/[^\d]/g,''))||0;
+        if (v>0) addG(v);
+      });
+      document.getElementById('protein-correct-toggle')?.addEventListener('click', ()=>{
+        showCorrect = !showCorrect;
+        document.getElementById('protein-correct').style.display = showCorrect ? 'block' : 'none';
+        if (showCorrect){
+          document.getElementById('protein-correct-input').value = total;
+        }
+      });
+      document.getElementById('protein-correct-save')?.addEventListener('click', async ()=>{
+        const v = Number(document.getElementById('protein-correct-input').value.replace(/[^\d]/g,''))||0;
+        await setProtein(v, date);
+        total = v;
+        updateProgress();
+        onDone?.();
+      });
+    }
   });
 }
 
