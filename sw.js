@@ -1,6 +1,6 @@
 /* Service worker: app shell offline. */
 
-const VERSION = 'vitta-v17';
+const VERSION = 'vitta-v18';
 const ASSETS = [
   './',
   './index.html',
