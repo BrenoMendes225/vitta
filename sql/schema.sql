@@ -43,6 +43,7 @@ create table if not exists public.meals (
   user_id uuid references auth.users(id) on delete cascade not null,
   date date not null,
   time time,
+  type text,
   text text,
   kcal numeric,
   protein numeric,
@@ -50,6 +51,8 @@ create table if not exists public.meals (
   fat numeric,
   comment text,
   confidence text,
+  photo_id text,
+  thumb text,
   created_at timestamptz default now()
 );
 

@@ -21,9 +21,10 @@ export async function put(store, record) {
   if (!userId) return record;
   const payload = { ...record, user_id: userId };
   if (!payload.id) payload.id = crypto.randomUUID();
-  // mapeia camelCase -> snake_case para colunas de auditoria
+  // mapeia camelCase -> snake_case para colunas de auditoria e fotos
   if (payload.createdAt) { payload.created_at = payload.createdAt; delete payload.createdAt; }
   if (payload.updatedAt) { payload.updated_at = payload.updatedAt; delete payload.updatedAt; }
+  if (payload.photoId) { payload.photo_id = payload.photoId; delete payload.photoId; }
   const { error } = await supabase.from(t).upsert(payload);
   if (error) throw error;
   return payload;
@@ -34,7 +35,7 @@ export async function get(store, key) {
   if (!userId) return null;
   const { data, error } = await supabase.from(t).select('*').eq('id', key).eq('user_id', userId).single();
   if (error && error.code !== 'PGRST116') throw error;
-  return data ? { ...data, createdAt: data.created_at, updatedAt: data.updated_at } : null;
+  return data ? { ...data, createdAt: data.created_at, updatedAt: data.updated_at, photoId: data.photo_id } : null;
 }
 
 export async function remove(store, key) {
@@ -50,7 +51,7 @@ export async function all(store) {
   if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).order('date', { ascending: false });
   if (error) throw error;
-  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at }));
+  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id }));
 }
 
 export async function byDate(store, date) {
@@ -58,7 +59,7 @@ export async function byDate(store, date) {
   if (!userId) return [];
   const { data, error } = await supabase.from(t).select('*').eq('user_id', userId).eq('date', date);
   if (error) throw error;
-  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at }));
+  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id }));
 }
 
 export async function inRange(store, fromISO, toISO) {
@@ -69,7 +70,7 @@ export async function inRange(store, fromISO, toISO) {
     .gte('date', fromISO)
     .lte('date', toISO);
   if (error) throw error;
-  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at }));
+  return (data || []).map(r => ({ ...r, createdAt: r.created_at, updatedAt: r.updated_at, photoId: r.photo_id }));
 }
 
 export async function count(store) {
